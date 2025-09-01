@@ -1,0 +1,142 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Simplified BugTracker System for Testing
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    Description: Environment name (dev, staging, prod)
+
+Resources:
+  # DynamoDB Table with Unified Schema
+  BugTrackerTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "BugTracker-${Environment}"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+        - AttributeName: priority
+          AttributeType: S
+        - AttributeName: state
+          AttributeType: S
+        - AttributeName: sourceSystem
+          AttributeType: S
+        - AttributeName: createdAt
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: priority-index
+          KeySchema:
+            - AttributeName: priority
+              KeyType: HASH
+            - AttributeName: createdAt
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: state-index
+          KeySchema:
+            - AttributeName: state
+              KeyType: HASH
+            - AttributeName: createdAt
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: source-index
+          KeySchema:
+            - AttributeName: sourceSystem
+              KeyType: HASH
+            - AttributeName: createdAt
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Purpose
+          Value: unified-bug-tracking
+
+  # Lambda Function for Querying Bugs
+  BugTrackerQueryFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "BugTrackerQuery-${Environment}"
+      CodeUri: lambdas/
+      Handler: bug_tracker_query.lambda_handler
+      Runtime: python3.9
+      Timeout: 300
+      Environment:
+        Variables:
+          AWS_REGION: !Ref AWS::Region
+          DYNAMODB_TABLE: !Ref BugTrackerTable
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref BugTrackerTable
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /query-bugs
+            Method: get
+
+  # Lambda Function for Manual Bug Linking
+  BugTrackerLinkerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "BugTrackerLinker-${Environment}"
+      CodeUri: lambdas/
+      Handler: bug_tracker_linker.lambda_handler
+      Runtime: python3.9
+      Timeout: 300
+      Environment:
+        Variables:
+          AWS_REGION: !Ref AWS::Region
+          DYNAMODB_TABLE: !Ref BugTrackerTable
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref BugTrackerTable
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /link-bugs
+            Method: post
+
+  # API Gateway
+  BugTrackerApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref Environment
+      Cors:
+        AllowMethods: "'GET,POST,OPTIONS'"
+        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+        AllowOrigin: "'*'"
+
+Outputs:
+  BugTrackerTableName:
+    Description: "Name of the BugTracker DynamoDB table"
+    Value: !Ref BugTrackerTable
+    Export:
+      Name: !Sub "${AWS::StackName}-TableName"
+
+  BugTrackerTableArn:
+    Description: "ARN of the BugTracker DynamoDB table"
+    Value: !GetAtt BugTrackerTable.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-TableArn"
+
+  BugTrackerApiUrl:
+    Description: "URL of the BugTracker API Gateway"
+    Value: !Sub "https://${BugTrackerApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}"
+    Export:
+      Name: !Sub "${AWS::StackName}-ApiUrl"
+

@@ -1,0 +1,319 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Bug Tracker Dashboard - Complete AWS Deployment'
+
+Parameters:
+  Environment:
+    Type: String
+    Default: 'dev'
+    Description: 'Environment name (dev, staging, prod)'
+  
+  ShortcutApiToken:
+    Type: String
+    NoEcho: true
+    Description: 'Shortcut API Token'
+  
+  SlackBotToken:
+    Type: String
+    NoEcho: true
+    Description: 'Slack Bot Token'
+  
+  ZendeskDomain:
+    Type: String
+    Default: 'everyset'
+    Description: 'Zendesk domain'
+  
+  ZendeskEmail:
+    Type: String
+    Description: 'Zendesk email'
+  
+  ZendeskApiToken:
+    Type: String
+    NoEcho: true
+    Description: 'Zendesk API Token'
+
+Resources:
+  # Use existing DynamoDB table (imported from previous stack)
+  BugTrackerTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub 'BugTracker-${Environment}'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+
+  # S3 Bucket for Lambda deployment
+  LambdaDeploymentBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub 'bugtracker-lambda-${Environment}-${AWS::AccountId}'
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteOldVersions
+            Status: Enabled
+            NoncurrentVersionExpirationInDays: 7
+
+  # IAM Role for Lambda functions
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub 'BugTrackerLambdaRole-${Environment}'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DynamoDBAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                Resource: !GetAtt BugTrackerTable.Arn
+
+  # Lambda function for data ingestion
+  IngestionLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub 'BugTrackerIngestion-${Environment}'
+      Runtime: python3.9
+      Handler: index.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 900  # 15 minutes
+      MemorySize: 512
+      Environment:
+        Variables:
+          ENVIRONMENT: !Ref Environment
+          SHORTCUT_API_TOKEN: !Ref ShortcutApiToken
+          SLACK_BOT_TOKEN: !Ref SlackBotToken
+          ZENDESK_DOMAIN: !Ref ZendeskDomain
+          ZENDESK_EMAIL: !Ref ZendeskEmail
+          ZENDESK_API_TOKEN: !Ref ZendeskApiToken
+          DYNAMODB_TABLE: !Ref BugTrackerTable
+      Code:
+        ZipFile: |
+          import json
+          import boto3
+          import os
+          import requests
+          from datetime import datetime, timedelta
+          from botocore.exceptions import ClientError
+          
+          def lambda_handler(event, context):
+              try:
+                  # Initialize DynamoDB
+                  dynamodb = boto3.resource('dynamodb')
+                  table = dynamodb.Table(os.environ['DYNAMODB_TABLE'])
+                  
+                  # Run ingestion
+                  result = run_ingestion(table)
+                  
+                  return {
+                      'statusCode': 200,
+                      'body': json.dumps({
+                          'message': 'Ingestion completed successfully',
+                          'result': result
+                      })
+                  }
+              except Exception as e:
+                  return {
+                      'statusCode': 500,
+                      'body': json.dumps({
+                          'error': str(e)
+                      })
+                  }
+          
+          def run_ingestion(table):
+              # This would contain the full ingestion logic
+              # For now, just return a placeholder
+              return {'ingested': 0, 'errors': []}
+
+  # EventBridge Rule for scheduled ingestion
+  IngestionSchedule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub 'BugTrackerIngestionSchedule-${Environment}'
+      Description: 'Schedule for bug tracker data ingestion'
+      ScheduleExpression: 'rate(1 hour)'
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt IngestionLambda.Arn
+          Id: IngestionTarget
+
+  # Permission for EventBridge to invoke Lambda
+  EventBridgePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref IngestionLambda
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt IngestionSchedule.Arn
+
+  # API Gateway for backend API
+  ApiGateway:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: !Sub 'BugTrackerAPI-${Environment}'
+      Description: 'Bug Tracker Dashboard API'
+
+  # API Gateway Deployment
+  ApiGatewayDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn: ApiGatewayMethod
+    Properties:
+      RestApiId: !Ref ApiGateway
+      StageName: !Ref Environment
+
+  # API Gateway Resource
+  ApiGatewayResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ApiGateway
+      ParentId: !GetAtt ApiGateway.RootResourceId
+      PathPart: 'bugs'
+
+  # API Gateway Method
+  ApiGatewayMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ApiGateway
+      ResourceId: !Ref ApiGatewayResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ApiLambda.Arn}/invocations'
+
+  # Lambda function for API
+  ApiLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub 'BugTrackerAPI-${Environment}'
+      Runtime: python3.9
+      Handler: index.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 30
+      MemorySize: 256
+      Environment:
+        Variables:
+          DYNAMODB_TABLE: !Ref BugTrackerTable
+      Code:
+        ZipFile: |
+          import json
+          import boto3
+          import os
+          from botocore.exceptions import ClientError
+          
+          def lambda_handler(event, context):
+              try:
+                  # Parse query parameters
+                  query_params = event.get('queryStringParameters', {}) or {}
+                  query_type = query_params.get('query_type', 'summary')
+                  source_system = query_params.get('source_system', 'all')
+                  start_date = query_params.get('start_date')
+                  end_date = query_params.get('end_date')
+                  
+                  # Initialize DynamoDB
+                  dynamodb = boto3.resource('dynamodb')
+                  table = dynamodb.Table(os.environ['DYNAMODB_TABLE'])
+                  
+                  # Handle different query types
+                  if query_type == 'summary':
+                      result = get_summary(table, source_system, start_date, end_date)
+                  elif query_type == 'time_series':
+                      result = get_time_series(table, source_system, start_date, end_date)
+                  elif query_type == 'by_source':
+                      result = get_by_source(table, source_system)
+                  else:
+                      return {
+                          'statusCode': 400,
+                          'body': json.dumps({'error': 'Invalid query_type'})
+                      }
+                  
+                  return {
+                      'statusCode': 200,
+                      'headers': {
+                          'Content-Type': 'application/json',
+                          'Access-Control-Allow-Origin': '*',
+                          'Access-Control-Allow-Headers': 'Content-Type',
+                          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
+                      },
+                      'body': json.dumps(result)
+                  }
+              except Exception as e:
+                  return {
+                      'statusCode': 500,
+                      'body': json.dumps({'error': str(e)})
+                  }
+          
+          def get_summary(table, source_system, start_date, end_date):
+              # Implementation for summary query
+              return {'total': 0, 'by_source': {}, 'by_priority': {}}
+          
+          def get_time_series(table, source_system, start_date, end_date):
+              # Implementation for time series query
+              return {'data': []}
+          
+          def get_by_source(table, source_system):
+              # Implementation for by_source query
+              return {'items': []}
+
+  # Permission for API Gateway to invoke Lambda
+  ApiGatewayPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref ApiLambda
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGateway}/*'
+
+Outputs:
+  DynamoDBTableName:
+    Description: 'DynamoDB table name'
+    Value: !Ref BugTrackerTable
+    Export:
+      Name: !Sub '${AWS::StackName}-DynamoDBTable'
+
+  ApiGatewayUrl:
+    Description: 'API Gateway URL'
+    Value: !Sub 'https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}'
+    Export:
+      Name: !Sub '${AWS::StackName}-ApiGatewayUrl'
+
+  IngestionLambdaArn:
+    Description: 'Ingestion Lambda ARN'
+    Value: !GetAtt IngestionLambda.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-IngestionLambda'
+
+  ApiLambdaArn:
+    Description: 'API Lambda ARN'
+    Value: !GetAtt ApiLambda.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-ApiLambda'
