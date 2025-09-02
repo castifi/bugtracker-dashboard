@@ -115,6 +115,9 @@ const BugList: React.FC<BugListProps> = ({
 
         if (response.ok) {
           const result = await response.json();
+          // Add detailed logging for troubleshooting
+          console.log(`By Source API Response for ${source}:`, result);
+          console.log(`By Source API URL for ${source}:`, `${apiGatewayUrl}?${params.toString()}`);
           // API returns data directly, not wrapped in success field
           if (result.items) {
             allBugs = [...allBugs, ...result.items];

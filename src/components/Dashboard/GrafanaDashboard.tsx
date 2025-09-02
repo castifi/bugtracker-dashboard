@@ -103,6 +103,10 @@ const GrafanaDashboard: React.FC<GrafanaDashboardProps> = ({
 
       const summaryData = await summaryResponse.json();
       
+      // Add detailed logging for troubleshooting
+      console.log('Summary API Response:', summaryData);
+      console.log('Summary API URL:', `${apiGatewayUrl}?${summaryParams.toString()}`);
+      
       // API returns data directly, not wrapped in success field
       setBugData(summaryData);
 
@@ -127,6 +131,9 @@ const GrafanaDashboard: React.FC<GrafanaDashboardProps> = ({
 
       if (timeSeriesResponse.ok) {
         const timeSeriesResult = await timeSeriesResponse.json();
+        // Add detailed logging for troubleshooting
+        console.log('Time Series API Response:', timeSeriesResult);
+        console.log('Time Series API URL:', `${apiGatewayUrl}?${timeSeriesParams.toString()}`);
         // API returns data directly, not wrapped in success field
         setTimeSeriesData(timeSeriesResult.data || timeSeriesResult);
       }
