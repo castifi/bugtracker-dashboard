@@ -8,6 +8,7 @@ const { Option } = Select;
 const { RangePicker } = DatePicker;
 
 // Helper function to safely render values that might be objects
+// Version: 1.0.1 - Debugging filtering issues
 const safeRender = (value: any): string => {
   if (value === null || value === undefined) return 'N/A';
   if (typeof value === 'string') return value;
