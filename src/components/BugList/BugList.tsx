@@ -95,8 +95,8 @@ const BugList: React.FC<BugListProps> = ({
     try {
       setLoading(true);
       
-      // Fetch bugs by source to get comprehensive data
-      const sources = ['slack', 'zendesk', 'shortcut'];
+      // Determine which sources to fetch based on selectedSource filter
+      const sources = selectedSource === 'all' ? ['slack', 'zendesk', 'shortcut'] : [selectedSource];
       let allBugs: BugItem[] = [];
 
       for (const source of sources) {
@@ -107,6 +107,9 @@ const BugList: React.FC<BugListProps> = ({
         if (timeRange) {
           params.append('start_date', timeRange[0]);
           params.append('end_date', timeRange[1]);
+          console.log(`Adding date filter: start_date=${timeRange[0]}, end_date=${timeRange[1]}`);
+        } else {
+          console.log('No date range selected');
         }
         
         const response = await fetch(`${apiGatewayUrl}?${params.toString()}`, {
@@ -115,7 +118,11 @@ const BugList: React.FC<BugListProps> = ({
 
         if (response.ok) {
           const result = await response.json();
-          if (result.success && result.items) {
+          // Add detailed logging for troubleshooting
+          console.log(`By Source API Response for ${source}:`, result);
+          console.log(`By Source API URL for ${source}:`, `${apiGatewayUrl}?${params.toString()}`);
+          // API returns data directly, not wrapped in success field
+          if (result.items) {
             allBugs = [...allBugs, ...result.items];
           }
         }
@@ -130,11 +137,11 @@ const BugList: React.FC<BugListProps> = ({
     } finally {
       setLoading(false);
     }
-  }, [apiGatewayUrl, timeRange]);
+  }, [apiGatewayUrl, timeRange, selectedSource]);
 
   useEffect(() => {
     fetchBugs();
-  }, [timeRange, fetchBugs]);
+  }, [timeRange, selectedSource, fetchBugs]);
 
   useEffect(() => {
     // Apply filters
@@ -155,11 +162,6 @@ const BugList: React.FC<BugListProps> = ({
       filtered = filtered.filter(bug => bug.priority === selectedPriority);
     }
 
-    // Source filter
-    if (selectedSource !== 'all') {
-      filtered = filtered.filter(bug => bug.sourceSystem === selectedSource);
-    }
-
     // State filter
     if (selectedState !== 'all') {
       filtered = filtered.filter(bug => 
@@ -168,7 +170,7 @@ const BugList: React.FC<BugListProps> = ({
     }
 
     setFilteredBugs(filtered);
-  }, [bugs, searchText, selectedPriority, selectedSource, selectedState]);
+  }, [bugs, searchText, selectedPriority, selectedState]);
 
   const handleViewDetails = (bug: BugItem) => {
     setSelectedBug(bug);
