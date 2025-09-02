@@ -9,7 +9,7 @@ frontend:
         - echo "NEXT_PUBLIC_ENVIRONMENT=dev" >> .env.local
     build:
       commands:
-        - npm run build
+        - npm run deploy
   artifacts:
     baseDirectory: out
     files:
