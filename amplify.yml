@@ -4,11 +4,14 @@ frontend:
     preBuild:
       commands:
         - npm install
+        - echo "NEXT_PUBLIC_API_GATEWAY_URL=https://pqsnmneda7.execute-api.us-west-2.amazonaws.com/dev/bugs" >> .env.local
+        - echo "NEXT_PUBLIC_AWS_REGION=us-west-2" >> .env.local
+        - echo "NEXT_PUBLIC_ENVIRONMENT=dev" >> .env.local
     build:
       commands:
-        - npm run build
+        - npm run deploy
   artifacts:
-    baseDirectory: .next
+    baseDirectory: out
     files:
       - '**/*'
   cache:
