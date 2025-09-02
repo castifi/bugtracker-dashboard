@@ -103,11 +103,8 @@ const GrafanaDashboard: React.FC<GrafanaDashboardProps> = ({
 
       const summaryData = await summaryResponse.json();
       
-      if (summaryData.success) {
-        setBugData(summaryData.summary);
-      } else {
-        throw new Error(summaryData.error || 'Failed to fetch summary data');
-      }
+      // API returns data directly, not wrapped in success field
+      setBugData(summaryData);
 
       // Fetch time series data
       const timeSeriesParams = new URLSearchParams({
@@ -130,9 +127,8 @@ const GrafanaDashboard: React.FC<GrafanaDashboardProps> = ({
 
       if (timeSeriesResponse.ok) {
         const timeSeriesResult = await timeSeriesResponse.json();
-        if (timeSeriesResult.success) {
-          setTimeSeriesData(timeSeriesResult.time_series);
-        }
+        // API returns data directly, not wrapped in success field
+        setTimeSeriesData(timeSeriesResult.data || timeSeriesResult);
       }
 
     } catch (err) {
