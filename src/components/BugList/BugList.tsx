@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Table, Card, Tag, Space, Button, Input, Select, DatePicker, Modal, message } from 'antd';
 import { SearchOutlined, FilterOutlined, LinkOutlined, EyeOutlined } from '@ant-design/icons';
 import styled from 'styled-components';
+import type { SortOrder } from 'antd/es/table/interface';
 
 const { Search } = Input;
 const { Option } = Select;
@@ -77,6 +78,8 @@ const BugList: React.FC<BugListProps> = ({
   const [selectedBug, setSelectedBug] = useState<BugItem | null>(null);
   const [linkModalVisible, setLinkModalVisible] = useState(false);
   const [linkForm, setLinkForm] = useState({ oldTicketId: '', newTicketId: '' });
+  const [sortField, setSortField] = useState<string>('createdAt');
+  const [sortOrder, setSortOrder] = useState<'ascend' | 'descend'>('descend');
 
   const priorityColors = {
     High: 'red',
@@ -211,11 +214,63 @@ const BugList: React.FC<BugListProps> = ({
     }
   };
 
+  const handleTableChange = (pagination: any, filters: any, sorter: any) => {
+    if (sorter.field) {
+      setSortField(sorter.field);
+      setSortOrder(sorter.order);
+    }
+  };
+
+  const getSortedBugs = (bugs: BugItem[]) => {
+    return [...bugs].sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+
+      switch (sortField) {
+        case 'PK':
+          aValue = a.PK || '';
+          bValue = b.PK || '';
+          break;
+        case 'sourceSystem':
+          aValue = a.sourceSystem || '';
+          bValue = b.sourceSystem || '';
+          break;
+        case 'title':
+          aValue = (a.subject || a.name || a.text || '').toLowerCase();
+          bValue = (b.subject || b.name || b.text || '').toLowerCase();
+          break;
+        case 'priority':
+          aValue = a.priority || '';
+          bValue = b.priority || '';
+          break;
+        case 'status':
+          aValue = (a.state || a.status || '').toLowerCase();
+          bValue = (b.state || b.status || '').toLowerCase();
+          break;
+        case 'createdAt':
+          aValue = new Date(a.createdAt || '').getTime();
+          bValue = new Date(b.createdAt || '').getTime();
+          break;
+        default:
+          aValue = a.createdAt || '';
+          bValue = b.createdAt || '';
+      }
+
+      if (sortOrder === 'ascend') {
+        return aValue > bValue ? 1 : -1;
+      } else {
+        return aValue < bValue ? 1 : -1;
+      }
+    });
+  };
+
   const columns = [
     {
       title: 'Ticket ID',
       dataIndex: 'PK',
       key: 'PK',
+      sorter: true,
+      sortDirections: ['ascend', 'descend'] as SortOrder[],
       render: (text: string) => (
         <Tag color="blue" style={{ fontWeight: 'bold' }}>
           {text}
@@ -226,6 +281,8 @@ const BugList: React.FC<BugListProps> = ({
       title: 'Source',
       dataIndex: 'sourceSystem',
       key: 'sourceSystem',
+      sorter: true,
+      sortDirections: ['ascend', 'descend'] as SortOrder[],
       render: (text: string) => (
         <Tag color={sourceColors[text as keyof typeof sourceColors] || 'default'}>
           {text.charAt(0).toUpperCase() + text.slice(1)}
@@ -235,6 +292,9 @@ const BugList: React.FC<BugListProps> = ({
     {
       title: 'Title/Subject',
       key: 'title',
+      dataIndex: 'title',
+      sorter: true,
+      sortDirections: ['ascend', 'descend'] as SortOrder[],
       render: (record: BugItem) => (
         <div>
           <div style={{ fontWeight: 'bold' }}>
@@ -252,6 +312,8 @@ const BugList: React.FC<BugListProps> = ({
       title: 'Priority',
       dataIndex: 'priority',
       key: 'priority',
+      sorter: true,
+      sortDirections: ['ascend', 'descend'] as SortOrder[],
       render: (text: string) => (
         <Tag color={priorityColors[text as keyof typeof priorityColors] || 'default'}>
           {text || 'Unknown'}
@@ -261,6 +323,9 @@ const BugList: React.FC<BugListProps> = ({
     {
       title: 'Status',
       key: 'status',
+      dataIndex: 'status',
+      sorter: true,
+      sortDirections: ['ascend', 'descend'] as SortOrder[],
       render: (record: BugItem) => (
         <Tag color="green">
           {record.state || record.status || 'Unknown'}
@@ -271,6 +336,8 @@ const BugList: React.FC<BugListProps> = ({
       title: 'Created',
       dataIndex: 'createdAt',
       key: 'createdAt',
+      sorter: true,
+      sortDirections: ['ascend', 'descend'] as SortOrder[],
       render: (text: string) => new Date(text).toLocaleDateString(),
     },
     {
@@ -372,9 +439,10 @@ const BugList: React.FC<BugListProps> = ({
       <BugTableCard title={`Bug List (${filteredBugs.length} items)`}>
         <Table
           columns={columns}
-          dataSource={filteredBugs}
+          dataSource={getSortedBugs(filteredBugs)}
           rowKey="SK"
           loading={loading}
+          onChange={handleTableChange}
           pagination={{
             pageSize: 20,
             showSizeChanger: true,
