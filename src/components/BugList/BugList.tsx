@@ -95,8 +95,8 @@ const BugList: React.FC<BugListProps> = ({
     try {
       setLoading(true);
       
-      // Fetch bugs by source to get comprehensive data
-      const sources = ['slack', 'zendesk', 'shortcut'];
+      // Determine which sources to fetch based on selectedSource filter
+      const sources = selectedSource === 'all' ? ['slack', 'zendesk', 'shortcut'] : [selectedSource];
       let allBugs: BugItem[] = [];
 
       for (const source of sources) {
@@ -134,11 +134,11 @@ const BugList: React.FC<BugListProps> = ({
     } finally {
       setLoading(false);
     }
-  }, [apiGatewayUrl, timeRange]);
+  }, [apiGatewayUrl, timeRange, selectedSource]);
 
   useEffect(() => {
     fetchBugs();
-  }, [timeRange, fetchBugs]);
+  }, [timeRange, selectedSource, fetchBugs]);
 
   useEffect(() => {
     // Apply filters
@@ -159,11 +159,6 @@ const BugList: React.FC<BugListProps> = ({
       filtered = filtered.filter(bug => bug.priority === selectedPriority);
     }
 
-    // Source filter
-    if (selectedSource !== 'all') {
-      filtered = filtered.filter(bug => bug.sourceSystem === selectedSource);
-    }
-
     // State filter
     if (selectedState !== 'all') {
       filtered = filtered.filter(bug => 
@@ -172,7 +167,7 @@ const BugList: React.FC<BugListProps> = ({
     }
 
     setFilteredBugs(filtered);
-  }, [bugs, searchText, selectedPriority, selectedSource, selectedState]);
+  }, [bugs, searchText, selectedPriority, selectedState]);
 
   const handleViewDetails = (bug: BugItem) => {
     setSelectedBug(bug);
