@@ -107,6 +107,9 @@ const BugList: React.FC<BugListProps> = ({
         if (timeRange) {
           params.append('start_date', timeRange[0]);
           params.append('end_date', timeRange[1]);
+          console.log(`Adding date filter: start_date=${timeRange[0]}, end_date=${timeRange[1]}`);
+        } else {
+          console.log('No date range selected');
         }
         
         const response = await fetch(`${apiGatewayUrl}?${params.toString()}`, {
