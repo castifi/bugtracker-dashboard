@@ -38,7 +38,7 @@ const ChartCard = styled(Card)`
 `;
 
 interface BugData {
-  total_bugs: number;
+  total: number;
   by_priority: Record<string, number>;
   by_state: Record<string, number>;
   by_source: Record<string, number>;
@@ -220,7 +220,7 @@ const GrafanaDashboard: React.FC<GrafanaDashboardProps> = ({
           <MetricCard>
             <Statistic
               title="Total Bugs"
-              value={bugData?.total_bugs || 0}
+              value={bugData?.total || 0}
               valueStyle={{ color: '#1890ff' }}
             />
           </MetricCard>
