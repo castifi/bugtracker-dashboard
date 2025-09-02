@@ -115,7 +115,8 @@ const BugList: React.FC<BugListProps> = ({
 
         if (response.ok) {
           const result = await response.json();
-          if (result.success && result.items) {
+          // API returns data directly, not wrapped in success field
+          if (result.items) {
             allBugs = [...allBugs, ...result.items];
           }
         }
