@@ -289,9 +289,90 @@ def ingest_slack_messages_lambda(api_token):
         print("❌ Missing Slack API token")
         return []
     
-    # For now, return empty list - implement full Slack ingestion later
-    print("⚠️ Slack ingestion not fully implemented yet")
-    return []
+    try:
+        # Get list of channels
+        channels_url = "https://slack.com/api/conversations.list"
+        headers = {
+            'Authorization': f'Bearer {api_token}',
+            'Content-Type': 'application/json'
+        }
+        
+        # Create request with headers
+        req = urllib.request.Request(channels_url, headers=headers)
+        with urllib.request.urlopen(req) as response:
+            channels_data = json.loads(response.read().decode())
+        
+        channels = channels_data.get('channels', [])
+        print(f"✅ Found {len(channels)} Slack channels")
+        
+        slack_bugs = []
+        
+        # Look for bug-related channels or messages
+        bug_keywords = ['bug', 'error', 'issue', 'problem', 'crash', 'broken']
+        
+        for channel in channels:
+            channel_id = channel.get('id')
+            channel_name = channel.get('name', '').lower()
+            
+            # Skip if channel name doesn't suggest bugs
+            if not any(keyword in channel_name for keyword in bug_keywords):
+                continue
+            
+            # Get messages from this channel
+            messages_url = f"https://slack.com/api/conversations.history?channel={channel_id}&limit=100"
+            req = urllib.request.Request(messages_url, headers=headers)
+            
+            try:
+                with urllib.request.urlopen(req) as response:
+                    messages_data = json.loads(response.read().decode())
+                
+                messages = messages_data.get('messages', [])
+                
+                for message in messages:
+                    text = message.get('text', '').lower()
+                    
+                    # Check if message contains bug-related keywords
+                    if any(keyword in text for keyword in bug_keywords):
+                        # Get user info
+                        user_id = message.get('user', 'Unknown')
+                        user_name = 'Unknown'
+                        
+                        try:
+                            user_url = f"https://slack.com/api/users.info?user={user_id}"
+                            req = urllib.request.Request(user_url, headers=headers)
+                            with urllib.request.urlopen(req) as response:
+                                user_data = json.loads(response.read().decode())
+                            user_name = user_data.get('user', {}).get('real_name', 'Unknown')
+                        except:
+                            pass
+                        
+                        bug = {
+                            'PK': f"SL--{message.get('ts', '').replace('.', '')}",
+                            'SK': f"slack#{channel_id}#{message.get('ts', '')}",
+                            'sourceSystem': 'slack',
+                            'priority': 'Unknown',
+                            'state': 'Unknown',
+                            'text': message.get('text', ''),
+                            'createdAt': datetime.fromtimestamp(float(message.get('ts', 0))).isoformat(),
+                            'updatedAt': datetime.fromtimestamp(float(message.get('ts', 0))).isoformat(),
+                            'author': user_name,
+                            'author_id': user_id,
+                            'tags': [channel_name]
+                        }
+                        slack_bugs.append(bug)
+                        
+            except Exception as e:
+                print(f"⚠️ Error fetching messages from channel {channel_name}: {e}")
+                continue
+        
+        print(f"✅ Processed {len(slack_bugs)} Slack bug messages")
+        return slack_bugs
+        
+    except Exception as e:
+        print(f"❌ Error fetching Slack messages: {e}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+        return []
 
 def ingest_zendesk_tickets_lambda(domain, email, api_token):
     """Ingest tickets from Zendesk"""
@@ -301,9 +382,87 @@ def ingest_zendesk_tickets_lambda(domain, email, api_token):
         print("❌ Missing Zendesk credentials")
         return []
     
-    # For now, return empty list - implement full Zendesk ingestion later
-    print("⚠️ Zendesk ingestion not fully implemented yet")
-    return []
+    try:
+        # Zendesk API endpoint for tickets
+        url = f"https://{domain}.zendesk.com/api/v2/search.json"
+        
+        # Search for tickets with specific criteria (bugs, open tickets, etc.)
+        params = {
+            'query': 'type:ticket status:open,hold,pending',
+            'sort_by': 'created_at',
+            'sort_order': 'desc'
+        }
+        
+        # Add parameters to URL
+        url_with_params = url + '?' + urllib.parse.urlencode(params)
+        
+        # Create basic auth header
+        import base64
+        credentials = f"{email}/token:{api_token}"
+        encoded_credentials = base64.b64encode(credentials.encode()).decode()
+        headers = {
+            'Authorization': f'Basic {encoded_credentials}',
+            'Content-Type': 'application/json'
+        }
+        
+        # Create request with headers
+        req = urllib.request.Request(url_with_params, headers=headers)
+        with urllib.request.urlopen(req) as response:
+            data = json.loads(response.read().decode())
+        
+        tickets = data.get('results', [])
+        print(f"✅ Found {len(tickets)} Zendesk tickets")
+        
+        zendesk_bugs = []
+        
+        for ticket in tickets:
+            # Only include tickets that are likely bugs (based on tags, subject, etc.)
+            subject = ticket.get('subject', '').lower()
+            description = ticket.get('description', '').lower()
+            tags = [tag.lower() for tag in ticket.get('tags', [])]
+            
+            # Check if this looks like a bug
+            is_bug = (
+                'bug' in subject or 'bug' in description or 'bug' in tags or
+                'error' in subject or 'error' in description or 'error' in tags or
+                'issue' in subject or 'issue' in description or 'issue' in tags or
+                'problem' in subject or 'problem' in description or 'problem' in tags
+            )
+            
+            if is_bug:
+                # Determine priority
+                priority_map = {
+                    'urgent': 'Critical',
+                    'high': 'High',
+                    'normal': 'Medium',
+                    'low': 'Low'
+                }
+                priority = priority_map.get(ticket.get('priority', 'normal'), 'Medium')
+                
+                bug = {
+                    'PK': f"ZD-{ticket['id']}",
+                    'SK': f"zendesk#{ticket['id']}",
+                    'sourceSystem': 'zendesk',
+                    'priority': priority,
+                    'status': ticket.get('status', 'Unknown'),
+                    'subject': ticket.get('subject', 'No subject'),
+                    'text': ticket.get('description', ''),
+                    'createdAt': ticket.get('created_at', datetime.now().isoformat()),
+                    'updatedAt': ticket.get('updated_at', datetime.now().isoformat()),
+                    'requester': ticket.get('requester_id', 'Unknown'),
+                    'assignee': ticket.get('assignee_id', 'Unassigned'),
+                    'tags': ticket.get('tags', [])
+                }
+                zendesk_bugs.append(bug)
+        
+        print(f"✅ Processed {len(zendesk_bugs)} Zendesk bug tickets")
+        return zendesk_bugs
+        
+    except Exception as e:
+        print(f"❌ Error fetching Zendesk tickets: {e}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+        return []
 
 def run_ingestion(table):
     """Run the full ingestion process"""

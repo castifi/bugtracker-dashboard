@@ -97,6 +97,10 @@ const BugList: React.FC<BugListProps> = ({
     try {
       setLoading(true);
       
+      // Clear existing bugs when changing source filter
+      setBugs([]);
+      setFilteredBugs([]);
+      
       // Determine which sources to fetch based on selectedSource filter
       const sources = selectedSource === 'all' ? ['slack', 'zendesk', 'shortcut'] : [selectedSource];
       let allBugs: BugItem[] = [];
@@ -130,6 +134,9 @@ const BugList: React.FC<BugListProps> = ({
         }
       }
 
+      console.log(`Total bugs fetched: ${allBugs.length}`);
+      console.log(`First few bugs:`, allBugs.slice(0, 3).map(bug => ({ PK: bug.PK, sourceSystem: bug.sourceSystem })));
+
       setBugs(allBugs);
       setFilteredBugs(allBugs);
 
@@ -143,6 +150,10 @@ const BugList: React.FC<BugListProps> = ({
 
   useEffect(() => {
     fetchBugs();
+    // Reset other filters when source changes
+    setSearchText('');
+    setSelectedPriority('all');
+    setSelectedState('all');
   }, [timeRange, selectedSource, fetchBugs]);
 
   useEffect(() => {
