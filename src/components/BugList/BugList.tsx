@@ -230,7 +230,7 @@ const BugList: React.FC<BugListProps> = ({
       title: 'Ticket ID',
       dataIndex: 'PK',
       key: 'PK',
-      sorter: true,
+      sorter: (a: BugItem, b: BugItem) => (a.PK || '').localeCompare(b.PK || ''),
       sortDirections: ['ascend', 'descend'] as SortOrder[],
       render: (text: string) => (
         <Tag color="blue" style={{ fontWeight: 'bold' }}>
@@ -242,7 +242,7 @@ const BugList: React.FC<BugListProps> = ({
       title: 'Source',
       dataIndex: 'sourceSystem',
       key: 'sourceSystem',
-      sorter: true,
+      sorter: (a: BugItem, b: BugItem) => (a.sourceSystem || '').localeCompare(b.sourceSystem || ''),
       sortDirections: ['ascend', 'descend'] as SortOrder[],
       render: (text: string) => (
         <Tag color={sourceColors[text as keyof typeof sourceColors] || 'default'}>
@@ -253,8 +253,11 @@ const BugList: React.FC<BugListProps> = ({
     {
       title: 'Title/Subject',
       key: 'title',
-      dataIndex: 'title',
-      sorter: true,
+      sorter: (a: BugItem, b: BugItem) => {
+        const aTitle = (a.subject || a.name || a.text || '').toLowerCase();
+        const bTitle = (b.subject || b.name || b.text || '').toLowerCase();
+        return aTitle.localeCompare(bTitle);
+      },
       sortDirections: ['ascend', 'descend'] as SortOrder[],
       render: (record: BugItem) => (
         <div>
@@ -273,7 +276,12 @@ const BugList: React.FC<BugListProps> = ({
       title: 'Priority',
       dataIndex: 'priority',
       key: 'priority',
-      sorter: true,
+      sorter: (a: BugItem, b: BugItem) => {
+        const priorityOrder = { 'Critical': 0, 'High': 1, 'Medium': 2, 'Low': 3, 'Unknown': 4 };
+        const aPriority = priorityOrder[a.priority as keyof typeof priorityOrder] ?? 4;
+        const bPriority = priorityOrder[b.priority as keyof typeof priorityOrder] ?? 4;
+        return aPriority - bPriority;
+      },
       sortDirections: ['ascend', 'descend'] as SortOrder[],
       render: (text: string) => (
         <Tag color={priorityColors[text as keyof typeof priorityColors] || 'default'}>
@@ -284,7 +292,11 @@ const BugList: React.FC<BugListProps> = ({
     {
       title: 'Status',
       key: 'status',
-      sorter: true,
+      sorter: (a: BugItem, b: BugItem) => {
+        const aStatus = (a.state || a.status || 'Unknown').toLowerCase();
+        const bStatus = (b.state || b.status || 'Unknown').toLowerCase();
+        return aStatus.localeCompare(bStatus);
+      },
       sortDirections: ['ascend', 'descend'] as SortOrder[],
       render: (record: BugItem) => (
         <Tag color="green">
@@ -296,7 +308,11 @@ const BugList: React.FC<BugListProps> = ({
       title: 'Created',
       dataIndex: 'createdAt',
       key: 'createdAt',
-      sorter: true,
+      sorter: (a: BugItem, b: BugItem) => {
+        const aDate = new Date(a.createdAt || '').getTime();
+        const bDate = new Date(b.createdAt || '').getTime();
+        return aDate - bDate;
+      },
       sortDirections: ['ascend', 'descend'] as SortOrder[],
       render: (text: string) => new Date(text).toLocaleDateString(),
     },
