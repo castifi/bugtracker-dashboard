@@ -149,6 +149,14 @@ const BugList: React.FC<BugListProps> = ({
     // Apply filters
     let filtered = bugs;
 
+    // Debug: Log Shortcut bugs to see their structure
+    const shortcutBugs = bugs.filter(bug => bug.sourceSystem === 'shortcut');
+    if (shortcutBugs.length > 0) {
+      console.log('Shortcut bugs data structure:', shortcutBugs.slice(0, 2));
+    }
+
+    // Search filter
+
     // Search filter
     if (searchText) {
       filtered = filtered.filter(bug => 
@@ -276,7 +284,6 @@ const BugList: React.FC<BugListProps> = ({
     {
       title: 'Status',
       key: 'status',
-      dataIndex: 'status',
       sorter: true,
       sortDirections: ['ascend', 'descend'] as SortOrder[],
       render: (record: BugItem) => (
