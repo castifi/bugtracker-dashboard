@@ -84,7 +84,14 @@ const BugList: React.FC<BugListProps> = ({
     Medium: 'orange',
     Low: 'green',
     Critical: 'volcano',
-    Unknown: 'default'
+    Unknown: 'default',
+    // Shortcut custom priorities
+    'P0 Critical': 'red',
+    'P1 High': 'red',
+    'P2 Medium': 'orange',
+    'P3 Low': 'green',
+    'P4 Lowest': 'blue',
+    'Not Set': 'default'
   };
 
   const sourceColors = {
@@ -288,9 +295,16 @@ const BugList: React.FC<BugListProps> = ({
       dataIndex: 'priority',
       key: 'priority',
       sorter: (a: BugItem, b: BugItem) => {
-        const priorityOrder = { 'Critical': 0, 'High': 1, 'Medium': 2, 'Low': 3, 'Unknown': 4 };
-        const aPriority = priorityOrder[a.priority as keyof typeof priorityOrder] ?? 4;
-        const bPriority = priorityOrder[b.priority as keyof typeof priorityOrder] ?? 4;
+        const priorityOrder = { 
+          'P0 Critical': 0, 'Critical': 0,
+          'P1 High': 1, 'High': 1,
+          'P2 Medium': 2, 'Medium': 2,
+          'P3 Low': 3, 'Low': 3,
+          'P4 Lowest': 4,
+          'Not Set': 5, 'Unknown': 5
+        };
+        const aPriority = priorityOrder[a.priority as keyof typeof priorityOrder] ?? 5;
+        const bPriority = priorityOrder[b.priority as keyof typeof priorityOrder] ?? 5;
         return aPriority - bPriority;
       },
       sortDirections: ['ascend', 'descend'] as SortOrder[],
@@ -368,10 +382,16 @@ const BugList: React.FC<BugListProps> = ({
             style={{ width: 120 }}
           >
             <Option value="all">All Priorities</Option>
+            <Option value="P0 Critical">P0 Critical</Option>
+            <Option value="P1 High">P1 High</Option>
+            <Option value="P2 Medium">P2 Medium</Option>
+            <Option value="P3 Low">P3 Low</Option>
+            <Option value="P4 Lowest">P4 Lowest</Option>
             <Option value="High">High</Option>
             <Option value="Medium">Medium</Option>
             <Option value="Low">Low</Option>
             <Option value="Critical">Critical</Option>
+            <Option value="Not Set">Not Set</Option>
             <Option value="Unknown">Unknown</Option>
           </Select>
           <Select
