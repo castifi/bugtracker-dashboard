@@ -78,8 +78,6 @@ const BugList: React.FC<BugListProps> = ({
   const [selectedBug, setSelectedBug] = useState<BugItem | null>(null);
   const [linkModalVisible, setLinkModalVisible] = useState(false);
   const [linkForm, setLinkForm] = useState({ oldTicketId: '', newTicketId: '' });
-  const [sortField, setSortField] = useState<string>('createdAt');
-  const [sortOrder, setSortOrder] = useState<'ascend' | 'descend'>('descend');
 
   const priorityColors = {
     High: 'red',
@@ -154,10 +152,10 @@ const BugList: React.FC<BugListProps> = ({
     // Search filter
     if (searchText) {
       filtered = filtered.filter(bug => 
-        bug.PK?.toLowerCase().includes(searchText.toLowerCase()) ||
-        bug.subject?.toLowerCase().includes(searchText.toLowerCase()) ||
-        bug.text?.toLowerCase().includes(searchText.toLowerCase()) ||
-        bug.name?.toLowerCase().includes(searchText.toLowerCase())
+        (bug.PK || '').toLowerCase().includes(searchText.toLowerCase()) ||
+        (bug.subject || '').toLowerCase().includes(searchText.toLowerCase()) ||
+        (bug.text || '').toLowerCase().includes(searchText.toLowerCase()) ||
+        (bug.name || '').toLowerCase().includes(searchText.toLowerCase())
       );
     }
 
@@ -215,53 +213,8 @@ const BugList: React.FC<BugListProps> = ({
   };
 
   const handleTableChange = (pagination: any, filters: any, sorter: any) => {
-    if (sorter.field) {
-      setSortField(sorter.field);
-      setSortOrder(sorter.order);
-    }
-  };
-
-  const getSortedBugs = (bugs: BugItem[]) => {
-    return [...bugs].sort((a, b) => {
-      let aValue: any;
-      let bValue: any;
-
-      switch (sortField) {
-        case 'PK':
-          aValue = a.PK || '';
-          bValue = b.PK || '';
-          break;
-        case 'sourceSystem':
-          aValue = a.sourceSystem || '';
-          bValue = b.sourceSystem || '';
-          break;
-        case 'title':
-          aValue = (a.subject || a.name || a.text || '').toLowerCase();
-          bValue = (b.subject || b.name || b.text || '').toLowerCase();
-          break;
-        case 'priority':
-          aValue = a.priority || '';
-          bValue = b.priority || '';
-          break;
-        case 'status':
-          aValue = (a.state || a.status || '').toLowerCase();
-          bValue = (b.state || b.status || '').toLowerCase();
-          break;
-        case 'createdAt':
-          aValue = new Date(a.createdAt || '').getTime();
-          bValue = new Date(b.createdAt || '').getTime();
-          break;
-        default:
-          aValue = a.createdAt || '';
-          bValue = b.createdAt || '';
-      }
-
-      if (sortOrder === 'ascend') {
-        return aValue > bValue ? 1 : -1;
-      } else {
-        return aValue < bValue ? 1 : -1;
-      }
-    });
+    console.log('Table change:', { pagination, filters, sorter });
+    // Ant Design handles sorting internally when sorter: true is used
   };
 
   const columns = [
@@ -298,9 +251,9 @@ const BugList: React.FC<BugListProps> = ({
       render: (record: BugItem) => (
         <div>
           <div style={{ fontWeight: 'bold' }}>
-            {record.subject || record.name || record.text?.substring(0, 50) || 'No title'}
+            {(record?.subject || record?.name || record?.text?.substring(0, 50) || 'No title')}
           </div>
-          {record.text && record.text.length > 50 && (
+          {record?.text && record.text.length > 50 && (
             <div style={{ fontSize: '12px', color: '#666' }}>
               {record.text.substring(0, 100)}...
             </div>
@@ -328,7 +281,7 @@ const BugList: React.FC<BugListProps> = ({
       sortDirections: ['ascend', 'descend'] as SortOrder[],
       render: (record: BugItem) => (
         <Tag color="green">
-          {record.state || record.status || 'Unknown'}
+          {(record?.state || record?.status || 'Unknown')}
         </Tag>
       ),
     },
@@ -439,7 +392,7 @@ const BugList: React.FC<BugListProps> = ({
       <BugTableCard title={`Bug List (${filteredBugs.length} items)`}>
         <Table
           columns={columns}
-          dataSource={getSortedBugs(filteredBugs)}
+          dataSource={filteredBugs}
           rowKey="SK"
           loading={loading}
           onChange={handleTableChange}
