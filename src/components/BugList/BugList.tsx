@@ -152,10 +152,10 @@ const BugList: React.FC<BugListProps> = ({
     // Search filter
     if (searchText) {
       filtered = filtered.filter(bug => 
-        bug.PK?.toLowerCase().includes(searchText.toLowerCase()) ||
-        bug.subject?.toLowerCase().includes(searchText.toLowerCase()) ||
-        bug.text?.toLowerCase().includes(searchText.toLowerCase()) ||
-        bug.name?.toLowerCase().includes(searchText.toLowerCase())
+        (bug.PK || '').toLowerCase().includes(searchText.toLowerCase()) ||
+        (bug.subject || '').toLowerCase().includes(searchText.toLowerCase()) ||
+        (bug.text || '').toLowerCase().includes(searchText.toLowerCase()) ||
+        (bug.name || '').toLowerCase().includes(searchText.toLowerCase())
       );
     }
 
@@ -251,9 +251,9 @@ const BugList: React.FC<BugListProps> = ({
       render: (record: BugItem) => (
         <div>
           <div style={{ fontWeight: 'bold' }}>
-            {record.subject || record.name || record.text?.substring(0, 50) || 'No title'}
+            {(record?.subject || record?.name || record?.text?.substring(0, 50) || 'No title')}
           </div>
-          {record.text && record.text.length > 50 && (
+          {record?.text && record.text.length > 50 && (
             <div style={{ fontSize: '12px', color: '#666' }}>
               {record.text.substring(0, 100)}...
             </div>
@@ -281,7 +281,7 @@ const BugList: React.FC<BugListProps> = ({
       sortDirections: ['ascend', 'descend'] as SortOrder[],
       render: (record: BugItem) => (
         <Tag color="green">
-          {record.state || record.status || 'Unknown'}
+          {(record?.state || record?.status || 'Unknown')}
         </Tag>
       ),
     },
