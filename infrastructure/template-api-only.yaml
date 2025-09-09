@@ -79,7 +79,7 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       FunctionName: 'BugTrackerIngestion'
-      Runtime: python3.9
+      Runtime: python3.11
       Handler: index.lambda_handler
       Role: !GetAtt LambdaExecutionRole.Arn
       Timeout: 900  # 15 minutes
@@ -98,7 +98,9 @@ Resources:
           import json
           import boto3
           import os
-          import requests
+          import urllib.request
+          import urllib.parse
+          import urllib.error
           from datetime import datetime, timedelta
           from botocore.exceptions import ClientError
           
@@ -127,9 +129,134 @@ Resources:
                   }
           
           def run_ingestion(table):
-              # This would contain the full ingestion logic
-              # For now, just return a placeholder
-              return {'ingested': 0, 'errors': []}
+              try:
+                  print("🚀 Starting automated ingestion...")
+                  
+                  # Initialize API tokens from environment
+                  SHORTCUT_API_TOKEN = os.environ.get('SHORTCUT_API_TOKEN')
+                  SLACK_BOT_TOKEN = os.environ.get('SLACK_BOT_TOKEN')
+                  ZENDESK_DOMAIN = os.environ.get('ZENDESK_DOMAIN')
+                  ZENDESK_EMAIL = os.environ.get('ZENDESK_EMAIL')
+                  ZENDESK_API_TOKEN = os.environ.get('ZENDESK_API_TOKEN')
+                  
+                  print(f"✅ Environment variables loaded: Shortcut={bool(SHORTCUT_API_TOKEN)}, Slack={bool(SLACK_BOT_TOKEN)}, Zendesk={bool(ZENDESK_API_TOKEN)}")
+                  
+                  # Run ingestion for each source
+                  results = {
+                      'shortcut': 0,
+                      'slack': 0,
+                      'zendesk': 0,
+                      'errors': []
+                  }
+                  
+                  # Zendesk ingestion
+                  if ZENDESK_API_TOKEN:
+                      try:
+                          zendesk_bugs = ingest_zendesk_tickets(ZENDESK_DOMAIN, ZENDESK_EMAIL, ZENDESK_API_TOKEN)
+                          for bug in zendesk_bugs:
+                              table.put_item(Item=bug)
+                          results['zendesk'] = len(zendesk_bugs)
+                          print(f"✅ Ingested {len(zendesk_bugs)} Zendesk bugs")
+                      except Exception as e:
+                          error_msg = f"Zendesk ingestion error: {str(e)}"
+                          print(f"❌ {error_msg}")
+                          results['errors'].append(error_msg)
+                  
+                  print(f"🎉 Ingestion completed: {results}")
+                  return results
+                  
+              except Exception as e:
+                  error_msg = f"General ingestion error: {str(e)}"
+                  print(f"❌ {error_msg}")
+                  return {'errors': [error_msg]}
+          
+          def ingest_zendesk_tickets(domain, email, api_token):
+              """Ingest tickets from Zendesk"""
+              print("🔍 Fetching Zendesk tickets...")
+              
+              if not all([domain, email, api_token]):
+                  print("❌ Missing Zendesk credentials")
+                  return []
+              
+              try:
+                  # Zendesk API endpoint for tickets
+                  url = f"https://{domain}.zendesk.com/api/v2/search.json"
+                  
+                  # Search for tickets with specific criteria
+                  params = {
+                      'query': 'type:ticket',
+                      'sort_by': 'created_at',
+                      'sort_order': 'desc'
+                  }
+                  
+                  # Add parameters to URL
+                  url_with_params = url + '?' + urllib.parse.urlencode(params)
+                  
+                  # Create basic auth header
+                  import base64
+                  credentials = f"{email}/token:{api_token}"
+                  encoded_credentials = base64.b64encode(credentials.encode()).decode()
+                  headers = {
+                      'Authorization': f'Basic {encoded_credentials}',
+                      'Content-Type': 'application/json'
+                  }
+                  
+                  # Make request
+                  req = urllib.request.Request(url_with_params, headers=headers)
+                  with urllib.request.urlopen(req) as response:
+                      data = json.loads(response.read().decode())
+                  
+                  tickets = data.get('results', [])
+                  print(f"✅ Found {len(tickets)} Zendesk tickets")
+                  
+                  zendesk_bugs = []
+                  
+                  for ticket in tickets:
+                      # Only include tickets that are likely bugs
+                      subject = ticket.get('subject', '').lower()
+                      description = ticket.get('description', '').lower()
+                      tags = [tag.lower() for tag in ticket.get('tags', [])]
+                      
+                      # Check if this looks like a bug
+                      is_bug = (
+                          'bug' in subject or 'bug' in description or 'bug' in tags or
+                          'error' in subject or 'error' in description or 'error' in tags or
+                          'issue' in subject or 'issue' in description or 'issue' in tags or
+                          'problem' in subject or 'problem' in description or 'problem' in tags
+                      )
+                      
+                      if is_bug:
+                          # Determine priority
+                          priority_map = {
+                              'urgent': 'Critical',
+                              'high': 'High',
+                              'normal': 'Medium',
+                              'low': 'Low'
+                          }
+                          priority = priority_map.get(ticket.get('priority', 'normal'), 'Medium')
+                          
+                          bug = {
+                              'PK': f"ZD-{ticket['id']}",
+                              'SK': f"zendesk#{ticket['id']}",
+                              'sourceSystem': 'zendesk',
+                              'priority': priority,
+                              'status': ticket.get('status', 'Unknown'),
+                              'subject': ticket.get('subject', 'No subject'),
+                              'text': ticket.get('description', ''),
+                              'createdAt': ticket.get('created_at', datetime.now().isoformat()),
+                              'updatedAt': ticket.get('updated_at', datetime.now().isoformat()),
+                              'requester': ticket.get('requester_id', 'Unknown'),
+                              'assignee': ticket.get('assignee_id', 'Unassigned'),
+                              'tags': ticket.get('tags', [])
+                          }
+                          zendesk_bugs.append(bug)
+                  
+                  print(f"✅ Processed {len(zendesk_bugs)} Zendesk bug tickets")
+                  return zendesk_bugs
+                  
+              except Exception as e:
+                  print(f"❌ Error fetching Zendesk tickets: {e}")
+                  return []
 
   # EventBridge Rule for scheduled ingestion
   IngestionSchedule:
@@ -193,7 +320,7 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       FunctionName: 'BugTrackerAPI'
-      Runtime: python3.9
+      Runtime: python3.11
       Handler: index.lambda_handler
       Role: !GetAtt LambdaExecutionRole.Arn
       Timeout: 30
@@ -227,7 +354,7 @@ Resources:
                   elif query_type == 'time_series':
                       result = get_time_series(table, source_system, start_date, end_date)
                   elif query_type == 'by_source':
-                      result = get_by_source(table, source_system)
+                      result = get_by_source(table, source_system, start_date, end_date)
                   else:
                       return {
                           'statusCode': 400,
@@ -251,16 +378,165 @@ Resources:
                   }
           
           def get_summary(table, source_system, start_date, end_date):
-              # Implementation for summary query
-              return {'total': 0, 'by_source': {}, 'by_priority': {}}
+              try:
+                  # Scan DynamoDB table
+                  scan_kwargs = {}
+                  
+                  # Add source filter if specified
+                  if source_system and source_system != 'all':
+                      scan_kwargs['FilterExpression'] = boto3.dynamodb.conditions.Attr('sourceSystem').eq(source_system)
+                  
+                  # Add date filters if specified
+                  if start_date or end_date:
+                      date_filter = boto3.dynamodb.conditions.Attr('createdAt')
+                      if start_date:
+                          date_filter = date_filter.gte(start_date)
+                      if end_date:
+                          date_filter = date_filter.lte(end_date)
+                      
+                      if 'FilterExpression' in scan_kwargs:
+                          scan_kwargs['FilterExpression'] = scan_kwargs['FilterExpression'] & date_filter
+                      else:
+                          scan_kwargs['FilterExpression'] = date_filter
+                  
+                  response = table.scan(**scan_kwargs)
+                  items = response.get('Items', [])
+                  
+                  # Continue scanning if there are more items
+                  while 'LastEvaluatedKey' in response:
+                      scan_kwargs['ExclusiveStartKey'] = response['LastEvaluatedKey']
+                      response = table.scan(**scan_kwargs)
+                      items.extend(response.get('Items', []))
+                  
+                  # Calculate summary statistics
+                  total = len(items)
+                  by_source = {}
+                  by_priority = {}
+                  by_state = {}
+                  
+                  for item in items:
+                      # Count by source
+                      source = item.get('sourceSystem', 'Unknown')
+                      by_source[source] = by_source.get(source, 0) + 1
+                      
+                      # Count by priority
+                      priority = item.get('priority', 'Unknown')
+                      by_priority[priority] = by_priority.get(priority, 0) + 1
+                      
+                      # Count by state/status
+                      state = item.get('state') or item.get('status', 'Unknown')
+                      by_state[state] = by_state.get(state, 0) + 1
+                  
+                  return {
+                      'total': total,
+                      'by_source': by_source,
+                      'by_priority': by_priority,
+                      'by_state': by_state
+                  }
+              except Exception as e:
+                  print(f"Error in get_summary: {e}")
+                  return {'total': 0, 'by_source': {}, 'by_priority': {}, 'by_state': {}}
           
           def get_time_series(table, source_system, start_date, end_date):
-              # Implementation for time series query
-              return {'data': []}
+              try:
+                  # Similar scan logic as get_summary
+                  scan_kwargs = {}
+                  
+                  if source_system and source_system != 'all':
+                      scan_kwargs['FilterExpression'] = boto3.dynamodb.conditions.Attr('sourceSystem').eq(source_system)
+                  
+                  if start_date or end_date:
+                      date_filter = boto3.dynamodb.conditions.Attr('createdAt')
+                      if start_date:
+                          date_filter = date_filter.gte(start_date)
+                      if end_date:
+                          date_filter = date_filter.lte(end_date)
+                      
+                      if 'FilterExpression' in scan_kwargs:
+                          scan_kwargs['FilterExpression'] = scan_kwargs['FilterExpression'] & date_filter
+                      else:
+                          scan_kwargs['FilterExpression'] = date_filter
+                  
+                  response = table.scan(**scan_kwargs)
+                  items = response.get('Items', [])
+                  
+                  while 'LastEvaluatedKey' in response:
+                      scan_kwargs['ExclusiveStartKey'] = response['LastEvaluatedKey']
+                      response = table.scan(**scan_kwargs)
+                      items.extend(response.get('Items', []))
+                  
+                  # Group by date
+                  from collections import defaultdict
+                  daily_counts = defaultdict(int)
+                  
+                  for item in items:
+                      created_at = item.get('createdAt', '')
+                      if created_at:
+                          # Extract date part (YYYY-MM-DD)
+                          date_part = created_at.split('T')[0] if 'T' in created_at else created_at[:10]
+                          daily_counts[date_part] += 1
+                  
+                  # Convert to sorted list
+                  time_series_data = [{'date': date, 'count': count} for date, count in sorted(daily_counts.items())]
+                  
+                  return {'data': time_series_data}
+              except Exception as e:
+                  print(f"Error in get_time_series: {e}")
+                  return {'data': []}
           
-          def get_by_source(table, source_system):
-              # Implementation for by_source query
-              return {'items': []}
+          def get_by_source(table, source_system, start_date=None, end_date=None):
+              try:
+                  # Scan DynamoDB table
+                  scan_kwargs = {}
+                  
+                  # Add source filter if specified
+                  if source_system and source_system != 'all':
+                      scan_kwargs['FilterExpression'] = boto3.dynamodb.conditions.Attr('sourceSystem').eq(source_system)
+                  
+                  # Add date filters if specified
+                  if start_date or end_date:
+                      date_filter = boto3.dynamodb.conditions.Attr('createdAt')
+                      if start_date:
+                          # Convert to ISO format for DynamoDB comparison
+                          start_date_iso = f"{start_date}T00:00:00Z"
+                          date_filter = date_filter.gte(start_date_iso)
+                      if end_date:
+                          # Convert to ISO format for DynamoDB comparison
+                          end_date_iso = f"{end_date}T23:59:59Z"
+                          date_filter = date_filter.lte(end_date_iso)
+                      
+                      if 'FilterExpression' in scan_kwargs:
+                          scan_kwargs['FilterExpression'] = scan_kwargs['FilterExpression'] & date_filter
+                      else:
+                          scan_kwargs['FilterExpression'] = date_filter
+                  
+                  response = table.scan(**scan_kwargs)
+                  items = response.get('Items', [])
+                  
+                  # Continue scanning if there are more items
+                  while 'LastEvaluatedKey' in response:
+                      scan_kwargs['ExclusiveStartKey'] = response['LastEvaluatedKey']
+                      response = table.scan(**scan_kwargs)
+                      items.extend(response.get('Items', []))
+                  
+                  # Convert Decimal types to regular numbers for JSON serialization
+                  import decimal
+                  def convert_decimals(obj):
+                      if isinstance(obj, dict):
+                          return {k: convert_decimals(v) for k, v in obj.items()}
+                      elif isinstance(obj, list):
+                          return [convert_decimals(v) for v in obj]
+                      elif isinstance(obj, decimal.Decimal):
+                          return float(obj)
+                      else:
+                          return obj
+                  
+                  items = convert_decimals(items)
+                  
+                  return {'items': items}
+              except Exception as e:
+                  print(f"Error in get_by_source: {e}")
+                  return {'items': []}
 
   # Permission for API Gateway to invoke Lambda
   ApiGatewayPermission:
