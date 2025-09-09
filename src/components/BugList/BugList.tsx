@@ -64,7 +64,7 @@ interface BugListProps {
 }
 
 const BugList: React.FC<BugListProps> = ({
-  apiGatewayUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://1kvgw5h1qb.execute-api.us-west-2.amazonaws.com/evt-bugtracker/query-bugs'
+  apiGatewayUrl = 'https://1kvgw5h1qb.execute-api.us-west-2.amazonaws.com/evt-bugtracker/query-bugs'
 }) => {
   const [loading, setLoading] = useState(false);
   const [bugs, setBugs] = useState<BugItem[]>([]);
