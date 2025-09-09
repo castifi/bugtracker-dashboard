@@ -181,10 +181,12 @@ def ingest_shortcut_stories_lambda(api_token):
     # Use Search API with pagination using 'next' token
     all_stories = []
     next_token = None
+    max_pages = 5  # Limit to 5 pages to avoid timeout
+    page_count = 0
     
     while True:
         params = {
-            'query': 'bug',
+            'query': 'story_type:bug',
             'detail': 'full'
         }
         
@@ -195,7 +197,7 @@ def ingest_shortcut_stories_lambda(api_token):
             # Build URL with parameters
             url = "https://api.app.shortcut.com/api/v3/search"
             params = {
-                'query': 'bug',
+                'query': 'story_type:bug',
                 'detail': 'full'
             }
             
@@ -224,6 +226,13 @@ def ingest_shortcut_stories_lambda(api_token):
             
             # Check for next page
             next_token = data.get('stories', {}).get('next')
+            page_count += 1
+            
+            # Limit pages to avoid timeout
+            if page_count >= max_pages:
+                print(f"⚠️ Reached maximum pages limit ({max_pages}), stopping pagination")
+                break
+                
             if not next_token:
                 break  # Last page
                 
@@ -252,31 +261,52 @@ def ingest_shortcut_stories_lambda(api_token):
     shortcut_bugs = []
     
     for story in all_stories:
-        # Only include actual bug stories
-        story_type = story.get('story_type', 'feature')
-        if story_type == 'bug':
-            priority = 'High'
-            
-            # Get owner names from owner IDs
-            owner_ids = story.get('owner_ids', [])
-            owner_names = get_shortcut_user_names(owner_ids)
-            
-            bug = {
-                'PK': f"SC-{story['id']}",
-                'SK': f"shortcut#{story['id']}",
-                'sourceSystem': 'shortcut',
-                'priority': priority,
-                'state': get_shortcut_status_name(story.get('workflow_state_id')),
-                'state_id': story.get('workflow_state_id'),
-                'name': story.get('name', 'No name'),
-                'description': story.get('description', ''),
-                'createdAt': story.get('created_at', datetime.now().isoformat()),
-                'updatedAt': story.get('updated_at', datetime.now().isoformat()),
-                'assignee': ', '.join(owner_names) if owner_names else 'Unassigned',  # Convert array to string
-                'assignee_ids': owner_ids,  # Keep the original IDs for reference
-                'tags': [label.get('name') for label in story.get('labels', [])]
-            }
-            shortcut_bugs.append(bug)
+        # All stories returned are already bug stories due to query filter
+        # Handle priority - use default if null
+        raw_priority = story.get('priority')
+        
+        # Check custom fields for priority
+        custom_priority = None
+        if story.get('custom_fields'):
+            for field in story['custom_fields']:
+                if field.get('field_id') == '6260494c-6e8f-4f04-bcd9-255dbdff67d6':  # Priority field ID
+                    custom_priority = field.get('value')
+                    break
+        
+        # Use custom priority if available, otherwise use standard priority
+        if custom_priority:
+            priority = custom_priority  # Use the actual value like "P0 Critical"
+        elif raw_priority:
+            priority = 'High'  # Shortcut priority levels are different
+        else:
+            priority = 'Not Set'  # Be transparent when priority is not configured
+        
+        # Get owner names from owner IDs
+        owner_ids = story.get('owner_ids', [])
+        owner_names = get_shortcut_user_names(owner_ids)
+        
+        # Get workflow state name
+        workflow_state_id = story.get('workflow_state_id')
+        state_name = get_shortcut_status_name(workflow_state_id)
+        
+        print(f"🔍 Processing Shortcut story {story['id']}: priority={raw_priority}->{priority} (custom: {custom_priority}), state={workflow_state_id}->{state_name}, owners={owner_ids}->{owner_names}")
+        
+        bug = {
+            'PK': f"SC-{story['id']}",
+            'SK': f"shortcut#{story['id']}",
+            'sourceSystem': 'shortcut',
+            'priority': priority,
+            'state': state_name,
+            'state_id': workflow_state_id,
+            'name': story.get('name', 'No name'),
+            'description': story.get('description', ''),
+            'createdAt': story.get('created_at', datetime.now().isoformat()),
+            'updatedAt': story.get('updated_at', datetime.now().isoformat()),
+            'assignee': ', '.join(owner_names) if owner_names else 'Unassigned',  # Convert array to string
+            'assignee_ids': owner_ids,  # Keep the original IDs for reference
+            'tags': [label.get('name') for label in story.get('labels', [])]
+        }
+        shortcut_bugs.append(bug)
     
     print(f"✅ Processed {len(shortcut_bugs)} Shortcut bug stories")
     return shortcut_bugs
@@ -290,35 +320,22 @@ def ingest_slack_messages_lambda(api_token):
         return []
     
     try:
-        # Get list of channels
-        channels_url = "https://slack.com/api/conversations.list"
+        # Specific channels to monitor for bugs
+        specific_channels = ['C08LC7Q97FY', 'C0921KTEKNG', 'C08LHAYC9L5', 'C01AAB3S8TU']
+        
+        # Set up headers for API requests
         headers = {
             'Authorization': f'Bearer {api_token}',
             'Content-Type': 'application/json'
         }
         
-        # Create request with headers
-        req = urllib.request.Request(channels_url, headers=headers)
-        with urllib.request.urlopen(req) as response:
-            channels_data = json.loads(response.read().decode())
-        
-        channels = channels_data.get('channels', [])
-        print(f"✅ Found {len(channels)} Slack channels")
-        
         slack_bugs = []
         
-        # Look for bug-related channels or messages
-        bug_keywords = ['bug', 'error', 'issue', 'problem', 'crash', 'broken']
-        
-        for channel in channels:
-            channel_id = channel.get('id')
-            channel_name = channel.get('name', '').lower()
+        # Process only the specific channels we want
+        for channel_id in specific_channels:
+            print(f"🔍 Processing specific channel: {channel_id}")
             
-            # Skip if channel name doesn't suggest bugs
-            if not any(keyword in channel_name for keyword in bug_keywords):
-                continue
-            
-            # Get messages from this channel
+            # Get messages from this specific channel
             messages_url = f"https://slack.com/api/conversations.history?channel={channel_id}&limit=100"
             req = urllib.request.Request(messages_url, headers=headers)
             
@@ -327,12 +344,86 @@ def ingest_slack_messages_lambda(api_token):
                     messages_data = json.loads(response.read().decode())
                 
                 messages = messages_data.get('messages', [])
+                print(f"📄 Found {len(messages)} messages in channel {channel_id}")
                 
                 for message in messages:
                     text = message.get('text', '').lower()
                     
-                    # Check if message contains bug-related keywords
-                    if any(keyword in text for keyword in bug_keywords):
+                    # Check for Slack app messages with "Voucher Bug Report" title
+                    # App messages have different structure - check attachments, blocks, etc.
+                    is_voucher_bug_report = False
+                    
+                    # Check if it's a Slack app message with Voucher Bug Report
+                    if message.get('subtype') == 'bot_message' or 'attachments' in message or 'blocks' in message:
+                        # Check attachments for app title
+                        attachments = message.get('attachments', [])
+                        for attachment in attachments:
+                            title = attachment.get('title', '').lower()
+                            if 'voucher bug report' in title:
+                                is_voucher_bug_report = True
+                                break
+                        
+                        # Check blocks for app title
+                        blocks = message.get('blocks', [])
+                        for block in blocks:
+                            if block.get('text', {}).get('text', '').lower() == 'voucher bug report':
+                                is_voucher_bug_report = True
+                                break
+                    
+                    # Also check regular text for the phrase
+                    if 'voucher bug report' in text.lower():
+                        is_voucher_bug_report = True
+                    
+                    # NEW: Check if message is from the Voucher Bug Report workflow
+                    # Look for messages that have the structured format with AUTHOR, AFFECTED URL, etc.
+                    if (message.get('subtype') == 'bot_message' or 
+                        ('blocks' in message and any('*AUTHOR*' in block.get('text', {}).get('text', '') for block in message.get('blocks', [])))):
+                        is_voucher_bug_report = True
+                    
+                    # NEW: Check if message is from a specific author (like WORKFLOW or a specific bot)
+                    # Get the actual author/sender of the message
+                    message_author = message.get('username', '') or message.get('bot_id', '') or message.get('user', '')
+                    if message_author.lower() in ['workflow', 'voucher bug report', 'voucher-payroll bug report']:
+                        is_voucher_bug_report = True
+                    
+                    # Check if message is from the Voucher Bug Report bot
+                    if message_author == 'B099SEGCS72':
+                        is_voucher_bug_report = True
+                    
+                    # Also check for any other potential Voucher Bug Report bots
+                    # (in case there are different bots for urgent vs non-urgent)
+                    if message_author.startswith('B') and any(keyword in text.lower() for keyword in ['voucher', 'bug', 'report']):
+                        is_voucher_bug_report = True
+                    
+                    # NEW: More specific filtering - only include messages that have structured bug report format
+                    # Look for messages that start with "AUTHOR" or have the structured format
+                    if is_voucher_bug_report:
+                        # Check if the message actually has the structured bug report format
+                        has_structured_format = False
+                        
+                        # Check if text starts with "*AUTHOR*" or contains structured fields
+                        if text.startswith('*author*') or '*author*' in text.lower():
+                            has_structured_format = True
+                        
+                        # Check blocks for structured format
+                        blocks = message.get('blocks', [])
+                        for block in blocks:
+                            block_text = block.get('text', {}).get('text', '').lower()
+                            if '*author*' in block_text or 'author:' in block_text:
+                                has_structured_format = True
+                                break
+                        
+                        # Only include if it has the structured format (exclude reminders)
+                        if not has_structured_format:
+                            is_voucher_bug_report = False
+                    
+                    # Debug: Log messages that might be voucher bug reports
+                    if any(keyword in text for keyword in ['voucher', 'bug', 'report']) or is_voucher_bug_report:
+                        print(f"🔍 Potential voucher message in {channel_id}: {message.get('text', '')[:100]}...")
+                        print(f"   Message type: {message.get('subtype', 'regular')}, has attachments: {bool(message.get('attachments'))}, has blocks: {bool(message.get('blocks'))}")
+                        print(f"   Author: {message_author}")
+                    
+                    if is_voucher_bug_report:
                         # Get user info
                         user_id = message.get('user', 'Unknown')
                         user_name = 'Unknown'
@@ -350,19 +441,19 @@ def ingest_slack_messages_lambda(api_token):
                             'PK': f"SL--{message.get('ts', '').replace('.', '')}",
                             'SK': f"slack#{channel_id}#{message.get('ts', '')}",
                             'sourceSystem': 'slack',
-                            'priority': 'Unknown',
-                            'state': 'Unknown',
+                            'priority': 'High',  # Voucher Bug Reports are typically high priority
+                            'state': 'Open',
                             'text': message.get('text', ''),
                             'createdAt': datetime.fromtimestamp(float(message.get('ts', 0))).isoformat(),
                             'updatedAt': datetime.fromtimestamp(float(message.get('ts', 0))).isoformat(),
                             'author': user_name,
                             'author_id': user_id,
-                            'tags': [channel_name]
+                            'tags': [channel_id, 'Voucher Bug Report']
                         }
                         slack_bugs.append(bug)
                         
             except Exception as e:
-                print(f"⚠️ Error fetching messages from channel {channel_name}: {e}")
+                print(f"⚠️ Error fetching messages from channel {channel_id}: {e}")
                 continue
         
         print(f"✅ Processed {len(slack_bugs)} Slack bug messages")
@@ -486,7 +577,7 @@ def run_ingestion(table):
             'errors': []
         }
         
-        # Shortcut ingestion
+        # Shortcut ingestion - optimized to fetch only recent bugs
         if SHORTCUT_API_TOKEN:
             try:
                 shortcut_bugs = ingest_shortcut_stories_lambda(SHORTCUT_API_TOKEN)
