@@ -64,7 +64,7 @@ interface BugListProps {
 }
 
 const BugList: React.FC<BugListProps> = ({
-  apiGatewayUrl = process.env.NEXT_PUBLIC_API_GATEWAY_URL || '/api/dynamodb-bugs'
+  apiGatewayUrl = process.env.NEXT_PUBLIC_API_GATEWAY_URL || 'https://1kvgw5h1qb.execute-api.us-west-2.amazonaws.com/evt-bugtracker/query-bugs'
 }) => {
   const [loading, setLoading] = useState(false);
   const [bugs, setBugs] = useState<BugItem[]>([]);
@@ -308,11 +308,23 @@ const BugList: React.FC<BugListProps> = ({
         return aPriority - bPriority;
       },
       sortDirections: ['ascend', 'descend'] as SortOrder[],
-      render: (text: string) => (
-        <Tag color={priorityColors[text as keyof typeof priorityColors] || 'default'}>
-          {text || 'Unknown'}
-        </Tag>
-      ),
+      render: (text: string, record: BugItem) => {
+        const isCriticalWithoutOwner = text === 'P0 Critical' && 
+          (!record.assignee || record.assignee === 'Unassigned' || record.assignee === 'Not Set');
+        
+        return (
+          <Space>
+            <Tag color={priorityColors[text as keyof typeof priorityColors] || 'default'}>
+              {text || 'Unknown'}
+            </Tag>
+            {isCriticalWithoutOwner && (
+              <span style={{ color: '#ff4d4f', fontSize: '16px' }} title="Critical bug without owner - needs attention!">
+                🔥
+              </span>
+            )}
+          </Space>
+        );
+      },
     },
     {
       title: 'Status',
@@ -328,6 +340,28 @@ const BugList: React.FC<BugListProps> = ({
           {(record?.state || record?.status || 'Unknown')}
         </Tag>
       ),
+    },
+    {
+      title: 'Assignee',
+      dataIndex: 'assignee',
+      key: 'assignee',
+      sorter: (a: BugItem, b: BugItem) => (a.assignee || '').localeCompare(b.assignee || ''),
+      sortDirections: ['ascend', 'descend'] as SortOrder[],
+      render: (text: string, record: BugItem) => {
+        const isCriticalWithoutOwner = record.priority === 'P0 Critical' && 
+          (!text || text === 'Unassigned' || text === 'Not Set');
+        
+        return (
+          <Space>
+            <span>{text || 'Unassigned'}</span>
+            {isCriticalWithoutOwner && (
+              <span style={{ color: '#ff4d4f', fontSize: '16px' }} title="Critical bug without owner - needs attention!">
+                🔥
+              </span>
+            )}
+          </Space>
+        );
+      },
     },
     {
       title: 'Created',
