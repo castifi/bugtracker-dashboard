@@ -1,7 +1,7 @@
 // Configuration for BugTracker Dashboard
 export const config = {
   // API Gateway URL - Will be set by deployment script
-  apiGatewayUrl: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000/api',
+  apiGatewayUrl: process.env.NEXT_PUBLIC_API_BASE_URL || 'https://1kvgw5h1qb.execute-api.us-west-2.amazonaws.com/evt-bugtracker',
   
   // AWS Configuration
   awsRegion: process.env.NEXT_PUBLIC_AWS_REGION || 'us-west-2',
