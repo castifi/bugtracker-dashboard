@@ -103,8 +103,12 @@ const GrafanaDashboard: React.FC<GrafanaDashboardProps> = ({
 
       const summaryData = await summaryResponse.json();
       
-      // API returns data directly, not wrapped in success field
-      setBugData(summaryData);
+      // API returns data wrapped in success field with summary property
+      if (summaryData.success && summaryData.summary) {
+        setBugData(summaryData.summary);
+      } else {
+        throw new Error('Invalid API response format');
+      }
 
       // Fetch time series data
       const timeSeriesParams = new URLSearchParams({
@@ -127,8 +131,10 @@ const GrafanaDashboard: React.FC<GrafanaDashboardProps> = ({
 
       if (timeSeriesResponse.ok) {
         const timeSeriesResult = await timeSeriesResponse.json();
-        // API returns data directly, not wrapped in success field
-        setTimeSeriesData(timeSeriesResult.data || timeSeriesResult);
+        // API returns data wrapped in success field with time_series property
+        if (timeSeriesResult.success && timeSeriesResult.time_series) {
+          setTimeSeriesData(timeSeriesResult.time_series);
+        }
       }
 
     } catch (err) {
