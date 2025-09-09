@@ -54,7 +54,7 @@ interface GrafanaDashboardProps {
 }
 
 const GrafanaDashboard: React.FC<GrafanaDashboardProps> = ({ 
-  apiGatewayUrl = process.env.NEXT_PUBLIC_API_GATEWAY_URL || '/api/dynamodb-bugs'
+  apiGatewayUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://1kvgw5h1qb.execute-api.us-west-2.amazonaws.com/evt-bugtracker/query-bugs'
 }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
