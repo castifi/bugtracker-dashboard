@@ -173,7 +173,10 @@ const BugList: React.FC<BugListProps> = ({
       console.log('Shortcut bugs data structure:', shortcutBugs.slice(0, 2));
     }
 
-    // Search filter
+    // Source filter - this was missing!
+    if (selectedSource !== 'all') {
+      filtered = filtered.filter(bug => bug.sourceSystem === selectedSource);
+    }
 
     // Search filter
     if (searchText) {
@@ -198,7 +201,7 @@ const BugList: React.FC<BugListProps> = ({
     }
 
     setFilteredBugs(filtered);
-  }, [bugs, searchText, selectedPriority, selectedState]);
+  }, [bugs, searchText, selectedPriority, selectedState, selectedSource]);
 
   const handleViewDetails = (bug: BugItem) => {
     setSelectedBug(bug);
