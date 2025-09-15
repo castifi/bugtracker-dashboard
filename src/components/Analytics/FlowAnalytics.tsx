@@ -78,9 +78,9 @@ const FlowAnalytics: React.FC = () => {
   const fetchAnalyticsData = async () => {
     try {
       setLoading(true);
-      const apiGatewayUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://1kvgw5h1qb.execute-api.us-west-2.amazonaws.com/evt-bugtracker';
+      const apiGatewayUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://1kvgw5h1qb.execute-api.us-west-2.amazonaws.com/evt-bugtracker/query-bugs';
       
-      const response = await fetch(`${apiGatewayUrl}/query-bugs?query_type=flow_analytics`);
+      const response = await fetch(`${apiGatewayUrl}?query_type=flow_analytics`);
       const data = await response.json();
       
       if (data.success) {
