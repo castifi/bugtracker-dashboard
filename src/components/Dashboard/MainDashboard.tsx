@@ -10,6 +10,7 @@ import {
 import styled from 'styled-components';
 import GrafanaDashboard from '../Dashboard/GrafanaDashboard';
 import BugList from '../BugList/BugList';
+import FlowAnalytics from '../Analytics/FlowAnalytics';
 
 const { Header, Sider, Content } = Layout;
 const { Title } = Typography;
@@ -104,12 +105,7 @@ const MainDashboard: React.FC = () => {
       case DashboardView.BUG_LIST:
         return <BugList key={refreshKey} />;
       case DashboardView.ANALYTICS:
-        return (
-          <div>
-            <Title level={2}>Analytics Dashboard</Title>
-            <p>Advanced analytics and reporting features coming soon...</p>
-          </div>
-        );
+        return <FlowAnalytics key={refreshKey} />;
       case DashboardView.SETTINGS:
         return (
           <div>
