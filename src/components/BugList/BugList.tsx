@@ -227,9 +227,21 @@ const BugList: React.FC<BugListProps> = ({
       console.log('Shortcut bugs data structure:', shortcutBugs.slice(0, 2));
     }
 
-    // Source filter - this was missing!
+    // Source filter - debugging
+    console.log('Current selectedSource:', selectedSource);
+    console.log('Sample bug sources:', bugs.slice(0, 5).map(b => ({ id: b.PK, source: b.sourceSystem })));
+    
     if (selectedSource !== 'all') {
-      filtered = filtered.filter(bug => bug.sourceSystem === selectedSource);
+      console.log('Filtering by source:', selectedSource);
+      const beforeFilter = filtered.length;
+      filtered = filtered.filter(bug => {
+        const match = bug.sourceSystem === selectedSource;
+        if (!match && selectedSource === 'shortcut') {
+          console.log('Filtered out non-shortcut:', { id: bug.PK, source: bug.sourceSystem });
+        }
+        return match;
+      });
+      console.log(`Filtered from ${beforeFilter} to ${filtered.length} items for source: ${selectedSource}`);
     }
 
     // Search filter
