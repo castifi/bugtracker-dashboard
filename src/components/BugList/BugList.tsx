@@ -162,11 +162,13 @@ const BugList: React.FC<BugListProps> = ({
       setBugs([]);
       setFilteredBugs([]);
       
-      // Determine which sources to fetch based on selectedSource filter
-      const sources = selectedSource === 'all' ? ['slack', 'zendesk', 'shortcut'] : [selectedSource];
+      // FIXED: Always fetch all data and filter client-side for reliability
       let allBugs: BugItem[] = [];
+      const allSources = ['slack', 'zendesk', 'shortcut'];
 
-      for (const source of sources) {
+      console.log(`🔍 FETCHING DATA - Selected source filter: "${selectedSource}"`);
+
+      for (const source of allSources) {
         const params = new URLSearchParams({
           query_type: 'by_source',
           source_system: source
@@ -175,28 +177,45 @@ const BugList: React.FC<BugListProps> = ({
           params.append('start_date', timeRange[0]);
           params.append('end_date', timeRange[1]);
           console.log(`Adding date filter: start_date=${timeRange[0]}, end_date=${timeRange[1]}`);
-        } else {
-          console.log('No date range selected');
         }
         
-        const response = await fetch(`${apiGatewayUrl}?${params.toString()}`, {
-          method: 'GET'
-        });
+        try {
+          const response = await fetch(`${apiGatewayUrl}?${params.toString()}`, {
+            method: 'GET'
+          });
 
-        if (response.ok) {
-          const result = await response.json();
-          // Add detailed logging for troubleshooting
-          console.log(`By Source API Response for ${source}:`, result);
-          console.log(`By Source API URL for ${source}:`, `${apiGatewayUrl}?${params.toString()}`);
-          // API returns data directly, not wrapped in success field
-          if (result.items) {
-            allBugs = [...allBugs, ...result.items];
+          if (response.ok) {
+            const result = await response.json();
+            console.log(`📊 API Response for ${source}:`, {
+              hasItems: !!result.items,
+              itemCount: result.items?.length || 0,
+              sample: result.items?.slice(0, 2).map((item: any) => ({
+                id: item.PK,
+                sourceSystem: item.sourceSystem
+              }))
+            });
+
+            if (result.items) {
+              allBugs = [...allBugs, ...result.items];
+            }
+          } else {
+            console.error(`❌ Failed to fetch ${source}:`, response.status);
           }
+        } catch (error) {
+          console.error(`❌ Error fetching ${source}:`, error);
         }
       }
 
-      console.log(`Total bugs fetched: ${allBugs.length}`);
-      console.log(`First few bugs:`, allBugs.slice(0, 3).map(bug => ({ PK: bug.PK, sourceSystem: bug.sourceSystem })));
+      console.log(`📈 FINAL SUMMARY:`, {
+        totalFetched: allBugs.length,
+        selectedFilter: selectedSource,
+        distribution: {
+          slack: allBugs.filter(b => b.sourceSystem === 'slack').length,
+          zendesk: allBugs.filter(b => b.sourceSystem === 'zendesk').length,
+          shortcut: allBugs.filter(b => b.sourceSystem === 'shortcut').length,
+          unknown: allBugs.filter(b => !b.sourceSystem || !['slack', 'zendesk', 'shortcut'].includes(b.sourceSystem)).length
+        }
+      });
 
       setBugs(allBugs);
       setFilteredBugs(allBugs);
@@ -221,27 +240,86 @@ const BugList: React.FC<BugListProps> = ({
     // Apply filters
     let filtered = bugs;
 
+    // DEBUG: Check what Slack records we're getting
+    const slackRecords = filtered.filter(bug => bug.sourceSystem === 'slack');
+    if (slackRecords.length > 0) {
+      console.log(`📋 Found ${slackRecords.length} Slack records`);
+      console.log('🔍 Sample Slack records:', slackRecords.slice(0, 3).map(bug => ({
+        id: bug.PK,
+        subject: bug.subject?.substring(0, 50),
+        textPreview: bug.text?.substring(0, 100),
+        hasAuthor: bug.text?.toUpperCase?.().includes?.('AUTHOR') || false
+      })));
+    }
+
     // Debug: Log Shortcut bugs to see their structure
-    const shortcutBugs = bugs.filter(bug => bug.sourceSystem === 'shortcut');
+    const shortcutBugs = filtered.filter(bug => bug.sourceSystem === 'shortcut');
     if (shortcutBugs.length > 0) {
       console.log('Shortcut bugs data structure:', shortcutBugs.slice(0, 2));
     }
 
-    // Source filter - debugging
-    console.log('Current selectedSource:', selectedSource);
-    console.log('Sample bug sources:', bugs.slice(0, 5).map(b => ({ id: b.PK, source: b.sourceSystem })));
+    // ENHANCED Source filter with case-insensitive matching and detailed debugging
+    console.log('🎯 FILTERING - Current selectedSource:', selectedSource);
+    console.log('📊 BEFORE FILTERING - Total bugs:', bugs.length);
+    
+    // Count bugs by source before filtering
+    const sourceCounts = {
+      slack: bugs.filter(b => b.sourceSystem === 'slack').length,
+      zendesk: bugs.filter(b => b.sourceSystem === 'zendesk').length,
+      shortcut: bugs.filter(b => b.sourceSystem === 'shortcut').length,
+      other: bugs.filter(b => b.sourceSystem && !['slack', 'zendesk', 'shortcut'].includes(b.sourceSystem)).length,
+      null: bugs.filter(b => !b.sourceSystem).length,
+    };
+    console.log('📈 Source distribution BEFORE filter:', sourceCounts);
+    
+    console.log('📋 Sample bug sources:', bugs.slice(0, 5).map(b => ({ 
+      id: b.PK, 
+      source: b.sourceSystem,
+      sourceType: typeof b.sourceSystem 
+    })));
     
     if (selectedSource !== 'all') {
-      console.log('Filtering by source:', selectedSource);
+      console.log('🔍 Filtering by source:', selectedSource);
       const beforeFilter = filtered.length;
+      
       filtered = filtered.filter(bug => {
-        const match = bug.sourceSystem === selectedSource;
-        if (!match && selectedSource === 'shortcut') {
-          console.log('Filtered out non-shortcut:', { id: bug.PK, source: bug.sourceSystem });
-        }
+        // Normalize both values for comparison (case-insensitive)
+        const bugSource = (bug.sourceSystem || '').toString().toLowerCase().trim();
+        const filterSource = selectedSource.toLowerCase().trim();
+        const match = bugSource === filterSource;
+        
         return match;
       });
-      console.log(`Filtered from ${beforeFilter} to ${filtered.length} items for source: ${selectedSource}`);
+      
+      console.log(`✅ FILTER RESULT: ${beforeFilter} → ${filtered.length} items (${selectedSource})`);
+      
+      // Count bugs by source AFTER filtering
+      const filteredSourceCounts = {
+        slack: filtered.filter(b => b.sourceSystem === 'slack').length,
+        zendesk: filtered.filter(b => b.sourceSystem === 'zendesk').length,
+        shortcut: filtered.filter(b => b.sourceSystem === 'shortcut').length,
+        other: filtered.filter(b => b.sourceSystem && !['slack', 'zendesk', 'shortcut'].includes(b.sourceSystem)).length,
+        null: filtered.filter(b => !b.sourceSystem).length,
+      };
+      console.log('📈 Source distribution AFTER filter:', filteredSourceCounts);
+      
+      // Alert if Slack records are showing when filtering for other sources
+      if (selectedSource !== 'slack' && filteredSourceCounts.slack > 0) {
+        console.error('🚨 BUG DETECTED: Slack records showing when filtering for', selectedSource);
+        console.error('🔍 Slack records that passed filter:', filtered.filter(b => b.sourceSystem === 'slack').slice(0, 3).map(b => ({
+          id: b.PK,
+          sourceSystem: b.sourceSystem,
+          rawSourceSystem: JSON.stringify(b.sourceSystem)
+        })));
+      }
+      
+      if (filtered.length === 0 && bugs.length > 0) {
+        const uniqueSources = Array.from(new Set(bugs.map(b => b.sourceSystem)));
+        console.warn('⚠️ NO ITEMS MATCH FILTER! Check source values:', {
+          availableSources: uniqueSources,
+          selectedFilter: selectedSource
+        });
+      }
     }
 
     // Search filter
