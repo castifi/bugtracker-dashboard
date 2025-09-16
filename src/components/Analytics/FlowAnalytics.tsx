@@ -144,7 +144,7 @@ const FlowAnalytics: React.FC = () => {
 
   // Get real development cards from analytics data
   const getRealCards = (): string[] => {
-    if (analyticsData?.source_analytics?.source_counts?.shortcut > 0) {
+    if (analyticsData?.source_analytics?.source_counts?.shortcut && analyticsData.source_analytics.source_counts.shortcut > 0) {
       // Generate dynamic card names based on real data
       const cardCount = Math.min(analyticsData.source_analytics.source_counts.shortcut, 5);
       const cards = [];
@@ -163,7 +163,13 @@ const FlowAnalytics: React.FC = () => {
     const owners = getRealOwners();
     const cards = getRealCards();
     
-    const connections = [];
+    const connections: Array<{
+      type: string;
+      from: string;
+      to: string;
+      strength: number;
+      label: string;
+    }> = [];
     
     // Create channel to owner connections
     channels.forEach((channel, channelIndex) => {
