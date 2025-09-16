@@ -32,12 +32,66 @@ const BugListContainer = styled.div`
 `;
 
 const FilterCard = styled(Card)`
-  margin-bottom: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 24px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  border: 1px solid #e8e8e8;
+  
+  .ant-card-body {
+    padding: 24px;
+  }
 `;
 
 const BugTableCard = styled(Card)`
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  border: 1px solid #e8e8e8;
+  
+  .ant-card-body {
+    padding: 0;
+  }
+  
+  .modern-table {
+    .ant-table-thead > tr > th {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      font-weight: 600;
+      font-size: 14px;
+      border: none;
+      text-align: center;
+      padding: 16px 12px;
+    }
+    
+    .ant-table-tbody > tr {
+      transition: all 0.2s ease;
+      
+      &:hover {
+        background: #f0f7ff !important;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      }
+      
+      &.table-row.even {
+        background: #fafafa;
+      }
+      
+      &.table-row.odd {
+        background: #ffffff;
+      }
+      
+      td {
+        padding: 12px;
+        border-bottom: 1px solid #f0f0f0;
+        vertical-align: middle;
+      }
+    }
+    
+    .ant-table-pagination {
+      padding: 16px 24px;
+      background: #fafafa;
+      border-top: 1px solid #f0f0f0;
+    }
+  }
 `;
 
 interface BugItem {
@@ -108,11 +162,13 @@ const BugList: React.FC<BugListProps> = ({
       setBugs([]);
       setFilteredBugs([]);
       
-      // Determine which sources to fetch based on selectedSource filter
-      const sources = selectedSource === 'all' ? ['slack', 'zendesk', 'shortcut'] : [selectedSource];
+      // FIXED: Always fetch all data and filter client-side for reliability
       let allBugs: BugItem[] = [];
+      const allSources = ['slack', 'zendesk', 'shortcut'];
 
-      for (const source of sources) {
+      console.log(`🔍 FETCHING DATA - Selected source filter: "${selectedSource}"`);
+
+      for (const source of allSources) {
         const params = new URLSearchParams({
           query_type: 'by_source',
           source_system: source
@@ -121,28 +177,45 @@ const BugList: React.FC<BugListProps> = ({
           params.append('start_date', timeRange[0]);
           params.append('end_date', timeRange[1]);
           console.log(`Adding date filter: start_date=${timeRange[0]}, end_date=${timeRange[1]}`);
-        } else {
-          console.log('No date range selected');
         }
         
-        const response = await fetch(`${apiGatewayUrl}?${params.toString()}`, {
-          method: 'GET'
-        });
+        try {
+          const response = await fetch(`${apiGatewayUrl}?${params.toString()}`, {
+            method: 'GET'
+          });
 
-        if (response.ok) {
-          const result = await response.json();
-          // Add detailed logging for troubleshooting
-          console.log(`By Source API Response for ${source}:`, result);
-          console.log(`By Source API URL for ${source}:`, `${apiGatewayUrl}?${params.toString()}`);
-          // API returns data directly, not wrapped in success field
-          if (result.items) {
-            allBugs = [...allBugs, ...result.items];
+          if (response.ok) {
+            const result = await response.json();
+            console.log(`📊 API Response for ${source}:`, {
+              hasItems: !!result.items,
+              itemCount: result.items?.length || 0,
+              sample: result.items?.slice(0, 2).map((item: any) => ({
+                id: item.PK,
+                sourceSystem: item.sourceSystem
+              }))
+            });
+
+            if (result.items) {
+              allBugs = [...allBugs, ...result.items];
+            }
+          } else {
+            console.error(`❌ Failed to fetch ${source}:`, response.status);
           }
+        } catch (error) {
+          console.error(`❌ Error fetching ${source}:`, error);
         }
       }
 
-      console.log(`Total bugs fetched: ${allBugs.length}`);
-      console.log(`First few bugs:`, allBugs.slice(0, 3).map(bug => ({ PK: bug.PK, sourceSystem: bug.sourceSystem })));
+      console.log(`📈 FINAL SUMMARY:`, {
+        totalFetched: allBugs.length,
+        selectedFilter: selectedSource,
+        distribution: {
+          slack: allBugs.filter(b => b.sourceSystem === 'slack').length,
+          zendesk: allBugs.filter(b => b.sourceSystem === 'zendesk').length,
+          shortcut: allBugs.filter(b => b.sourceSystem === 'shortcut').length,
+          unknown: allBugs.filter(b => !b.sourceSystem || !['slack', 'zendesk', 'shortcut'].includes(b.sourceSystem)).length
+        }
+      });
 
       setBugs(allBugs);
       setFilteredBugs(allBugs);
@@ -167,15 +240,86 @@ const BugList: React.FC<BugListProps> = ({
     // Apply filters
     let filtered = bugs;
 
+    // DEBUG: Check what Slack records we're getting
+    const slackRecords = filtered.filter(bug => bug.sourceSystem === 'slack');
+    if (slackRecords.length > 0) {
+      console.log(`📋 Found ${slackRecords.length} Slack records`);
+      console.log('🔍 Sample Slack records:', slackRecords.slice(0, 3).map(bug => ({
+        id: bug.PK,
+        subject: bug.subject?.substring(0, 50),
+        textPreview: bug.text?.substring(0, 100),
+        hasAuthor: bug.text?.toUpperCase?.().includes?.('AUTHOR') || false
+      })));
+    }
+
     // Debug: Log Shortcut bugs to see their structure
-    const shortcutBugs = bugs.filter(bug => bug.sourceSystem === 'shortcut');
+    const shortcutBugs = filtered.filter(bug => bug.sourceSystem === 'shortcut');
     if (shortcutBugs.length > 0) {
       console.log('Shortcut bugs data structure:', shortcutBugs.slice(0, 2));
     }
 
-    // Source filter - this was missing!
+    // ENHANCED Source filter with case-insensitive matching and detailed debugging
+    console.log('🎯 FILTERING - Current selectedSource:', selectedSource);
+    console.log('📊 BEFORE FILTERING - Total bugs:', bugs.length);
+    
+    // Count bugs by source before filtering
+    const sourceCounts = {
+      slack: bugs.filter(b => b.sourceSystem === 'slack').length,
+      zendesk: bugs.filter(b => b.sourceSystem === 'zendesk').length,
+      shortcut: bugs.filter(b => b.sourceSystem === 'shortcut').length,
+      other: bugs.filter(b => b.sourceSystem && !['slack', 'zendesk', 'shortcut'].includes(b.sourceSystem)).length,
+      null: bugs.filter(b => !b.sourceSystem).length,
+    };
+    console.log('📈 Source distribution BEFORE filter:', sourceCounts);
+    
+    console.log('📋 Sample bug sources:', bugs.slice(0, 5).map(b => ({ 
+      id: b.PK, 
+      source: b.sourceSystem,
+      sourceType: typeof b.sourceSystem 
+    })));
+    
     if (selectedSource !== 'all') {
-      filtered = filtered.filter(bug => bug.sourceSystem === selectedSource);
+      console.log('🔍 Filtering by source:', selectedSource);
+      const beforeFilter = filtered.length;
+      
+      filtered = filtered.filter(bug => {
+        // Normalize both values for comparison (case-insensitive)
+        const bugSource = (bug.sourceSystem || '').toString().toLowerCase().trim();
+        const filterSource = selectedSource.toLowerCase().trim();
+        const match = bugSource === filterSource;
+        
+        return match;
+      });
+      
+      console.log(`✅ FILTER RESULT: ${beforeFilter} → ${filtered.length} items (${selectedSource})`);
+      
+      // Count bugs by source AFTER filtering
+      const filteredSourceCounts = {
+        slack: filtered.filter(b => b.sourceSystem === 'slack').length,
+        zendesk: filtered.filter(b => b.sourceSystem === 'zendesk').length,
+        shortcut: filtered.filter(b => b.sourceSystem === 'shortcut').length,
+        other: filtered.filter(b => b.sourceSystem && !['slack', 'zendesk', 'shortcut'].includes(b.sourceSystem)).length,
+        null: filtered.filter(b => !b.sourceSystem).length,
+      };
+      console.log('📈 Source distribution AFTER filter:', filteredSourceCounts);
+      
+      // Alert if Slack records are showing when filtering for other sources
+      if (selectedSource !== 'slack' && filteredSourceCounts.slack > 0) {
+        console.error('🚨 BUG DETECTED: Slack records showing when filtering for', selectedSource);
+        console.error('🔍 Slack records that passed filter:', filtered.filter(b => b.sourceSystem === 'slack').slice(0, 3).map(b => ({
+          id: b.PK,
+          sourceSystem: b.sourceSystem,
+          rawSourceSystem: JSON.stringify(b.sourceSystem)
+        })));
+      }
+      
+      if (filtered.length === 0 && bugs.length > 0) {
+        const uniqueSources = Array.from(new Set(bugs.map(b => b.sourceSystem)));
+        console.warn('⚠️ NO ITEMS MATCH FILTER! Check source values:', {
+          availableSources: uniqueSources,
+          selectedFilter: selectedSource
+        });
+      }
     }
 
     // Search filter
@@ -493,7 +637,20 @@ const BugList: React.FC<BugListProps> = ({
             showQuickJumper: true,
             showTotal: (total, range) => 
               `${range[0]}-${range[1]} of ${total} items`,
+            size: 'default',
+            style: { padding: '16px 0' }
           }}
+          scroll={{ x: 1400 }}
+          size="middle"
+          className="modern-table"
+          style={{
+            background: '#fff',
+            borderRadius: '8px',
+            overflow: 'hidden'
+          }}
+          rowClassName={(record, index) => 
+            `table-row ${index % 2 === 0 ? 'even' : 'odd'}`
+          }
         />
       </BugTableCard>
 
@@ -504,37 +661,43 @@ const BugList: React.FC<BugListProps> = ({
         onCancel={() => setDetailModalVisible(false)}
         footer={null}
         width={800}
+        className="bug-detail-modal"
       >
         {selectedBug && (
-          <div>
-            <h3>Ticket ID: {selectedBug.PK || 'N/A'}</h3>
-            <p><strong>Source:</strong> {selectedBug.sourceSystem || 'N/A'}</p>
-            <p><strong>Created:</strong> {selectedBug.createdAt ? new Date(selectedBug.createdAt).toLocaleString() : 'N/A'}</p>
-            <p><strong>Updated:</strong> {selectedBug.updatedAt ? new Date(selectedBug.updatedAt).toLocaleString() : 'N/A'}</p>
-            {selectedBug.priority && <p><strong>Priority:</strong> {selectedBug.priority}</p>}
-            {selectedBug.state && <p><strong>State:</strong> {selectedBug.state}</p>}
-            {selectedBug.state_id && selectedBug.sourceSystem === 'shortcut' && <p><strong>State ID:</strong> {safeRender(selectedBug.state_id)}</p>}
-            {selectedBug.status && <p><strong>Status:</strong> {selectedBug.status}</p>}
-            {selectedBug.subject && <p><strong>Subject:</strong> {selectedBug.subject}</p>}
-            {selectedBug.name && <p><strong>Name:</strong> {selectedBug.name}</p>}
+          <div style={{ color: '#f0f6fc' }}>
+            <h3 style={{ color: '#f0f6fc', marginBottom: '16px' }}>Ticket ID: {selectedBug.PK || 'N/A'}</h3>
+            <p style={{ color: '#f0f6fc', marginBottom: '8px' }}><strong>Source:</strong> {selectedBug.sourceSystem || 'N/A'}</p>
+            <p style={{ color: '#f0f6fc', marginBottom: '8px' }}><strong>Created:</strong> {selectedBug.createdAt ? new Date(selectedBug.createdAt).toLocaleString() : 'N/A'}</p>
+            <p style={{ color: '#f0f6fc', marginBottom: '8px' }}><strong>Updated:</strong> {selectedBug.updatedAt ? new Date(selectedBug.updatedAt).toLocaleString() : 'N/A'}</p>
+            {selectedBug.priority && <p style={{ color: '#f0f6fc', marginBottom: '8px' }}><strong>Priority:</strong> {selectedBug.priority}</p>}
+            {selectedBug.state && <p style={{ color: '#f0f6fc', marginBottom: '8px' }}><strong>State:</strong> {selectedBug.state}</p>}
+            {selectedBug.state_id && selectedBug.sourceSystem === 'shortcut' && <p style={{ color: '#f0f6fc', marginBottom: '8px' }}><strong>State ID:</strong> {safeRender(selectedBug.state_id)}</p>}
+            {selectedBug.status && <p style={{ color: '#f0f6fc', marginBottom: '8px' }}><strong>Status:</strong> {selectedBug.status}</p>}
+            {selectedBug.subject && <p style={{ color: '#f0f6fc', marginBottom: '8px' }}><strong>Subject:</strong> {selectedBug.subject}</p>}
+            {selectedBug.name && <p style={{ color: '#f0f6fc', marginBottom: '8px' }}><strong>Name:</strong> {selectedBug.name}</p>}
             {selectedBug.text && (
-              <div>
-                <strong>Text:</strong>
+              <div style={{ marginBottom: '16px' }}>
+                <strong style={{ color: '#f0f6fc' }}>Text:</strong>
                 <div style={{ 
-                  background: '#f5f5f5', 
-                  padding: '10px', 
-                  marginTop: '5px',
-                  borderRadius: '4px',
-                  whiteSpace: 'pre-wrap'
+                  background: '#21262d', 
+                  border: '1px solid #30363d',
+                  padding: '12px', 
+                  marginTop: '8px',
+                  borderRadius: '6px',
+                  whiteSpace: 'pre-wrap',
+                  color: '#f0f6fc',
+                  fontSize: '14px',
+                  lineHeight: '1.5',
+                  fontFamily: 'Monaco, "Courier New", monospace'
                 }}>
                   {safeRender(selectedBug.text)}
                 </div>
               </div>
             )}
-            {selectedBug.author && <p><strong>Author:</strong> {safeRender(selectedBug.author)}</p>}
-            {selectedBug.author_id && selectedBug.sourceSystem === 'slack' && <p><strong>Author ID:</strong> {safeRender(selectedBug.author_id)}</p>}
-            {selectedBug.requester && <p><strong>Requester:</strong> {safeRender(selectedBug.requester)}</p>}
-            {selectedBug.assignee && <p><strong>Assignee:</strong> {safeRender(selectedBug.assignee)}</p>}
+            {selectedBug.author && <p style={{ color: '#f0f6fc', marginBottom: '8px' }}><strong>Author:</strong> {safeRender(selectedBug.author)}</p>}
+            {selectedBug.author_id && selectedBug.sourceSystem === 'slack' && <p style={{ color: '#f0f6fc', marginBottom: '8px' }}><strong>Author ID:</strong> {safeRender(selectedBug.author_id)}</p>}
+            {selectedBug.requester && <p style={{ color: '#f0f6fc', marginBottom: '8px' }}><strong>Requester:</strong> {safeRender(selectedBug.requester)}</p>}
+            {selectedBug.assignee && <p style={{ color: '#f0f6fc', marginBottom: '8px' }}><strong>Assignee:</strong> {safeRender(selectedBug.assignee)}</p>}
           </div>
         )}
       </Modal>

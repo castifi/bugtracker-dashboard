@@ -16,14 +16,14 @@
     "@types/styled-components": "^5.1.34",
     "antd": "^5.27.1",
     "aws-sdk": "^2.1692.0",
-    "d3-sankey": "^0.12.3",
     "next": "15.5.2",
     "react": "19.1.1",
     "react-dom": "19.1.1",
-    "react-flow-renderer": "^10.3.17",
+    "react-force-graph-2d": "^1.29.0",
     "react-redux": "^9.2.0",
     "recharts": "^2.12.0",
-    "styled-components": "^6.1.19"
+    "styled-components": "^6.1.19",
+    "three": "^0.180.0"
   },
   "devDependencies": {
     "@types/node": "24.3.0",
