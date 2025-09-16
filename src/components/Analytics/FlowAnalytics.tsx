@@ -173,100 +173,180 @@ const FlowAnalytics: React.FC = () => {
 
       {/* Flow Visualization */}
       <Card title="Ticket Flow Diagram" className="mb-6">
-        <div className="h-80 bg-gray-50 rounded-lg p-4">
-          <svg width="100%" height="100%" viewBox="0 0 800 280" className="overflow-visible">
-            {/* Background */}
-            <rect width="800" height="280" fill="#f8fafc" rx="8" />
+        <div className="h-96 bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg p-6 shadow-inner">
+          <svg width="100%" height="100%" viewBox="0 0 900 360" className="overflow-visible">
+            <defs>
+              {/* Gradients for beautiful effects */}
+              <linearGradient id="zendeskGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#7ED321" />
+                <stop offset="100%" stopColor="#5CB85C" />
+              </linearGradient>
+              <linearGradient id="slackGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#4A90E2" />
+                <stop offset="100%" stopColor="#357ABD" />
+              </linearGradient>
+              <linearGradient id="shortcutGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#F5A623" />
+                <stop offset="100%" stopColor="#E8940F" />
+              </linearGradient>
+              <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+                <feDropShadow dx="3" dy="3" stdDeviation="3" floodOpacity="0.3" />
+              </filter>
+            </defs>
             
-            {/* Nodes */}
-            {/* Slack Node */}
-            <g>
-              <rect x="50" y="40" width="120" height="200" fill="#4A90E2" rx="8" />
-              <text x="110" y="125" textAnchor="middle" fill="white" fontSize="14" fontWeight="bold">
-                Slack Reports
-              </text>
-              <text x="110" y="150" textAnchor="middle" fill="white" fontSize="24" fontWeight="bold">
-                {analyticsData.summary.total_slack_tickets}
-              </text>
-            </g>
+            {/* Background with subtle pattern */}
+            <rect width="900" height="360" fill="url(#backgroundGradient)" rx="12" />
             
-            {/* Zendesk Node */}
+            {/* Left: Zendesk Tickets */}
             <g>
-              <rect x="340" y="65" width="120" height="150" fill="#7ED321" rx="8" />
-              <text x="400" y="125" textAnchor="middle" fill="white" fontSize="14" fontWeight="bold">
+              <rect x="60" y="60" width="140" height="240" fill="url(#zendeskGradient)" rx="12" filter="url(#shadow)" />
+              <text x="130" y="100" textAnchor="middle" fill="white" fontSize="16" fontWeight="bold">
                 Zendesk Tickets
               </text>
-              <text x="400" y="150" textAnchor="middle" fill="white" fontSize="24" fontWeight="bold">
+              <text x="130" y="130" textAnchor="middle" fill="white" fontSize="32" fontWeight="bold">
                 {analyticsData.summary.total_zendesk_tickets}
               </text>
+              
+              {/* Zendesk ticket distribution visualization */}
+              <g>
+                <text x="130" y="160" textAnchor="middle" fill="white" fontSize="12" opacity="0.9">
+                  Connected: {analyticsData.summary.connected_tickets}
+                </text>
+                
+                {/* Visual bar showing connected vs total */}
+                <rect x="80" y="180" width="100" height="8" fill="rgba(255,255,255,0.3)" rx="4" />
+                <rect x="80" y="180" 
+                      width={(analyticsData.summary.connected_tickets / analyticsData.summary.total_zendesk_tickets) * 100} 
+                      height="8" fill="white" rx="4" />
+                
+                <text x="130" y="205" textAnchor="middle" fill="white" fontSize="10">
+                  {Math.round((analyticsData.summary.connected_tickets / analyticsData.summary.total_zendesk_tickets) * 100)}% Connected
+                </text>
+                
+                {/* Ticket ID examples */}
+                <text x="130" y="230" textAnchor="middle" fill="white" fontSize="10" opacity="0.8">
+                  ZD-5648, ZD-5644, ZD-5642...
+                </text>
+              </g>
             </g>
             
-            {/* Shortcut Node */}
+            {/* Center: Slack Reports */}
             <g>
-              <rect x="630" y="90" width="120" height="100" fill="#F5A623" rx="8" />
-              <text x="690" y="125" textAnchor="middle" fill="white" fontSize="14" fontWeight="bold">
+              <rect x="380" y="80" width="140" height="200" fill="url(#slackGradient)" rx="12" filter="url(#shadow)" />
+              <text x="450" y="120" textAnchor="middle" fill="white" fontSize="16" fontWeight="bold">
+                Slack Reports
+              </text>
+              <text x="450" y="150" textAnchor="middle" fill="white" fontSize="32" fontWeight="bold">
+                {analyticsData.summary.total_slack_tickets}
+              </text>
+              
+              {/* Slack filtering info */}
+              <g>
+                <text x="450" y="180" textAnchor="middle" fill="white" fontSize="12" opacity="0.9">
+                  With &quot;AUTHOR&quot; filter
+                </text>
+                <text x="450" y="200" textAnchor="middle" fill="white" fontSize="10" opacity="0.8">
+                  Bug reports only
+                </text>
+                
+                {/* Priority distribution mini-chart */}
+                <g>
+                  <text x="450" y="230" textAnchor="middle" fill="white" fontSize="10" opacity="0.8">
+                    Priority Distribution
+                  </text>
+                  <rect x="410" y="240" width="20" height="20" fill="#FF4D4F" rx="2" opacity="0.8" />
+                  <rect x="435" y="240" width="30" height="20" fill="#FF7A45" rx="2" opacity="0.8" />
+                  <rect x="470" y="240" width="15" height="20" fill="#52C41A" rx="2" opacity="0.8" />
+                </g>
+              </g>
+            </g>
+            
+            {/* Right: Shortcut Cards */}
+            <g>
+              <rect x="700" y="100" width="140" height="160" fill="url(#shortcutGradient)" rx="12" filter="url(#shadow)" />
+              <text x="770" y="140" textAnchor="middle" fill="white" fontSize="16" fontWeight="bold">
                 Shortcut Cards
               </text>
-              <text x="690" y="150" textAnchor="middle" fill="white" fontSize="24" fontWeight="bold">
+              <text x="770" y="170" textAnchor="middle" fill="white" fontSize="32" fontWeight="bold">
                 {analyticsData.summary.total_shortcut_cards}
               </text>
+              
+              {/* Development status */}
+              <g>
+                <text x="770" y="200" textAnchor="middle" fill="white" fontSize="12" opacity="0.9">
+                  In Development
+                </text>
+                <text x="770" y="220" textAnchor="middle" fill="white" fontSize="10" opacity="0.8">
+                  Avg: {formatHours(analyticsData.resolution_metrics.average_resolution_hours)}
+                </text>
+              </g>
             </g>
             
-            {/* Flow Paths - Sankey Style */}
-            {/* Slack to Zendesk Flow */}
+            {/* Beautiful Flow Connections */}
+            {/* Zendesk to Slack Flow */}
             <path
-              d="M 170 140 Q 255 100 340 140"
-              stroke="#60A5FA"
-              strokeWidth="60"
+              d="M 200 180 Q 290 160 380 180"
+              stroke="url(#slackGradient)"
+              strokeWidth="40"
               fill="none"
-              opacity="0.6"
+              opacity="0.7"
+              strokeLinecap="round"
             />
             
-            {/* Zendesk to Shortcut Flow */}
+            {/* Slack to Shortcut Flow */}
             <path
-              d="M 460 140 Q 545 130 630 140"
-              stroke="#34D399"
-              strokeWidth="35"
+              d="M 520 180 Q 610 170 700 180"
+              stroke="url(#shortcutGradient)"
+              strokeWidth="25"
               fill="none"
-              opacity="0.6"
+              opacity="0.7"
+              strokeLinecap="round"
             />
             
-            {/* Flow Labels with Background */}
+            {/* Flow Labels with Glass Effect */}
             <g>
-              <rect x="220" y="85" width="100" height="30" fill="white" stroke="#ddd" rx="4" opacity="0.95" />
-              <text x="270" y="103" textAnchor="middle" fontSize="12" fontWeight="bold">
-                ~93% Flow Rate
+              <rect x="250" y="140" width="120" height="40" fill="rgba(255,255,255,0.9)" 
+                    stroke="rgba(255,255,255,0.3)" strokeWidth="1" rx="8" filter="url(#shadow)" />
+              <text x="310" y="155" textAnchor="middle" fontSize="12" fontWeight="bold" fill="#4A90E2">
+                Reports → Tickets
+              </text>
+              <text x="310" y="170" textAnchor="middle" fontSize="10" fill="#666">
+                ~93% Conversion
               </text>
             </g>
             
             <g>
-              <rect x="510" y="105" width="100" height="50" fill="white" stroke="#ddd" rx="4" opacity="0.95" />
-              <text x="560" y="123" textAnchor="middle" fontSize="12" fontWeight="bold">
-                {analyticsData.summary.connected_tickets} Connected
+              <rect x="570" y="140" width="120" height="40" fill="rgba(255,255,255,0.9)" 
+                    stroke="rgba(255,255,255,0.3)" strokeWidth="1" rx="8" filter="url(#shadow)" />
+              <text x="630" y="155" textAnchor="middle" fontSize="12" fontWeight="bold" fill="#F5A623">
+                Tickets → Cards
               </text>
-              <text x="560" y="140" textAnchor="middle" fontSize="10" fill="#666">
-                Avg: {formatHours(analyticsData.resolution_metrics.average_resolution_hours)}
+              <text x="630" y="170" textAnchor="middle" fontSize="10" fill="#666">
+                {Math.round((analyticsData.summary.total_shortcut_cards / analyticsData.summary.total_zendesk_tickets) * 100)}% Development
               </text>
             </g>
             
-            {/* Conversion Rate Badge */}
+            {/* End-to-End Conversion Badge */}
             <g>
-              <circle cx="690" cy="210" r="30" fill="#8B5CF6" />
-              <text x="690" y="205" textAnchor="middle" fill="white" fontSize="11" fontWeight="bold">
+              <circle cx="450" cy="320" r="35" fill="url(#shortcutGradient)" filter="url(#shadow)" />
+              <text x="450" y="315" textAnchor="middle" fill="white" fontSize="14" fontWeight="bold">
                 {getConversionPercentage(analyticsData.source_analytics.conversion_rate.tickets_to_cards)}
               </text>
-              <text x="690" y="220" textAnchor="middle" fill="white" fontSize="9">
-                End-to-End
+              <text x="450" y="330" textAnchor="middle" fill="white" fontSize="10">
+                End-to-End Success
               </text>
             </g>
             
-            {/* Legend */}
+            {/* Elegant Legend */}
             <g>
-              <text x="50" y="260" fontSize="12" fill="#666" fontWeight="bold">Flow Width = Volume</text>
-              <line x1="180" y1="255" x2="220" y2="255" stroke="#60A5FA" strokeWidth="6" opacity="0.6" />
-              <text x="230" y="259" fontSize="10" fill="#666">High Volume</text>
-              <line x1="320" y1="255" x2="360" y2="255" stroke="#34D399" strokeWidth="4" opacity="0.6" />
-              <text x="370" y="259" fontSize="10" fill="#666">Connected Flow</text>
+              <rect x="60" y="320" width="280" height="30" fill="rgba(255,255,255,0.8)" rx="6" />
+              <text x="75" y="335" fontSize="11" fill="#666" fontWeight="bold">Flow Analysis:</text>
+              <text x="75" y="348" fontSize="9" fill="#666">
+                Zendesk ticket numbers tracked through development lifecycle
+              </text>
+              <circle cx="260" cy="335" r="4" fill="#7ED321" />
+              <circle cx="280" cy="335" r="4" fill="#4A90E2" />
+              <circle cx="300" cy="335" r="4" fill="#F5A623" />
             </g>
           </svg>
         </div>
