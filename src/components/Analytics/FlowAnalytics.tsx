@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from 'antd';
+import { ResponsiveSankey } from '@nivo/sankey';
 
 interface FlowNode {
   id: string;
@@ -349,6 +350,117 @@ const FlowAnalytics: React.FC = () => {
               <circle cx="300" cy="335" r="4" fill="#F5A623" />
             </g>
           </svg>
+        </div>
+      </Card>
+
+      {/* Interactive Sankey Diagram */}
+      <Card title="Interactive Ticket Flow: Channels → Owners → Development" className="mb-6">
+        <div className="h-96 bg-white rounded-lg">
+          <ResponsiveSankey
+            data={{
+              nodes: [
+                // Channel nodes
+                { id: 'ch-general', label: '#general' },
+                { id: 'ch-bug-reports', label: '#bug-reports' },
+                { id: 'ch-support', label: '#support' },
+                { id: 'ch-dev-alerts', label: '#dev-alerts' },
+                
+                // Owner nodes  
+                { id: 'owner-alice', label: 'Alice Johnson' },
+                { id: 'owner-bob', label: 'Bob Smith' },
+                { id: 'owner-carol', label: 'Carol Wilson' },
+                { id: 'owner-david', label: 'David Brown' },
+                
+                // Shortcut card nodes
+                { id: 'card-sc1', label: 'SC-64660' },
+                { id: 'card-sc2', label: 'SC-64803' },
+                { id: 'card-sc3', label: 'SC-65822' },
+                { id: 'card-sc4', label: 'SC-65615' },
+                { id: 'card-sc5', label: 'SC-64060' },
+              ],
+              links: [
+                // Channel to Owner flows
+                { source: 'ch-general', target: 'owner-alice', value: 45 },
+                { source: 'ch-general', target: 'owner-bob', value: 32 },
+                { source: 'ch-bug-reports', target: 'owner-carol', value: 78 },
+                { source: 'ch-bug-reports', target: 'owner-david', value: 56 },
+                { source: 'ch-support', target: 'owner-alice', value: 23 },
+                { source: 'ch-support', target: 'owner-carol', value: 34 },
+                { source: 'ch-dev-alerts', target: 'owner-bob', value: 19 },
+                { source: 'ch-dev-alerts', target: 'owner-david', value: 27 },
+                
+                // Owner to Card flows
+                { source: 'owner-alice', target: 'card-sc1', value: 15 },
+                { source: 'owner-alice', target: 'card-sc2', value: 8 },
+                { source: 'owner-bob', target: 'card-sc3', value: 12 },
+                { source: 'owner-bob', target: 'card-sc4', value: 9 },
+                { source: 'owner-carol', target: 'card-sc4', value: 18 },
+                { source: 'owner-carol', target: 'card-sc5', value: 14 },
+                { source: 'owner-david', target: 'card-sc1', value: 11 },
+                { source: 'owner-david', target: 'card-sc5', value: 7 },
+              ]
+            }}
+            margin={{ top: 40, right: 160, bottom: 40, left: 50 }}
+            align="justify"
+            colors={{ scheme: 'category10' }}
+            nodeOpacity={1}
+            nodeHoverOthersOpacity={0.35}
+            nodeThickness={18}
+            nodeSpacing={24}
+            nodeBorderWidth={0}
+            nodeBorderColor={{
+              from: 'color',
+              modifiers: [['darker', 0.8]]
+            }}
+            linkOpacity={0.5}
+            linkHoverOthersOpacity={0.1}
+            linkContract={3}
+            enableLinkGradient={true}
+            labelPosition="outside"
+            labelOrientation="vertical"
+            labelPadding={16}
+            labelTextColor={{
+              from: 'color',
+              modifiers: [['darker', 1]]
+            }}
+            legends={[
+              {
+                anchor: 'bottom-right',
+                direction: 'column',
+                translateX: 130,
+                itemWidth: 100,
+                itemHeight: 14,
+                itemDirection: 'right-to-left',
+                itemsSpacing: 2,
+                itemTextColor: '#999',
+                symbolSize: 14,
+                effects: [
+                  {
+                    on: 'hover',
+                    style: {
+                      itemTextColor: '#000'
+                    }
+                  }
+                ]
+              }
+            ]}
+          />
+        </div>
+        
+        {/* Flow Summary */}
+        <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-blue-50 p-4 rounded-lg text-center">
+            <div className="text-lg font-bold text-blue-600">4</div>
+            <div className="text-sm text-gray-600">Active Channels</div>
+          </div>
+          <div className="bg-green-50 p-4 rounded-lg text-center">
+            <div className="text-lg font-bold text-green-600">4</div>
+            <div className="text-sm text-gray-600">Ticket Owners</div>
+          </div>
+          <div className="bg-orange-50 p-4 rounded-lg text-center">
+            <div className="text-lg font-bold text-orange-600">5</div>
+            <div className="text-sm text-gray-600">Development Cards</div>
+          </div>
         </div>
       </Card>
 
