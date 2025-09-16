@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from 'antd';
-import { ResponsiveSankey } from '@nivo/sankey';
 
 interface FlowNode {
   id: string;
@@ -65,6 +64,29 @@ interface AnalyticsData {
       total_output_cards: number;
     };
   };
+}
+
+// Network Graph interfaces for advanced visualization
+interface NetworkNode {
+  id: string;
+  name: string;
+  type: 'channel' | 'owner' | 'card';
+  val: number;
+  color: string;
+  x?: number;
+  y?: number;
+}
+
+interface NetworkLink {
+  source: string;
+  target: string;
+  value: number;
+  color?: string;
+}
+
+interface NetworkGraphData {
+  nodes: NetworkNode[];
+  links: NetworkLink[];
 }
 
 const FlowAnalytics: React.FC = () => {
@@ -186,39 +208,8 @@ const FlowAnalytics: React.FC = () => {
 
   return (
     <div className="space-y-6 p-6">
-      <div className="text-2xl font-bold text-gray-800 mb-6">
+      <div className="text-2xl font-bold mb-6" style={{ color: '#f0f6fc' }}>
         End-to-End Ticket Flow Analytics
-      </div>
-
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <Card className="bg-blue-50 border-blue-200">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-blue-600">{analyticsData.summary.total_slack_tickets}</div>
-            <div className="text-sm text-gray-600">Slack Reports</div>
-          </div>
-        </Card>
-        
-        <Card className="bg-green-50 border-green-200">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-green-600">{analyticsData.summary.total_zendesk_tickets}</div>
-            <div className="text-sm text-gray-600">Zendesk Tickets</div>
-          </div>
-        </Card>
-        
-        <Card className="bg-orange-50 border-orange-200">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-orange-600">{analyticsData.summary.total_shortcut_cards}</div>
-            <div className="text-sm text-gray-600">Shortcut Cards</div>
-          </div>
-        </Card>
-        
-        <Card className="bg-purple-50 border-purple-200">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-purple-600">{analyticsData.summary.connected_tickets}</div>
-            <div className="text-sm text-gray-600">Connected Tickets</div>
-          </div>
-        </Card>
       </div>
 
       {/* Flow Visualization */}
@@ -402,89 +393,262 @@ const FlowAnalytics: React.FC = () => {
         </div>
       </Card>
 
-      {/* Interactive Sankey Diagram */}
-      <Card title="Interactive Ticket Flow: Channels → Owners → Development" className="mb-6 grafana-card">
-        <div className="h-96 chart-container" style={{ background: '#161b22', padding: '20px' }}>
-          <ResponsiveSankey
-            data={{
-              nodes: [
-                // Channel nodes (left side)
-                { id: 'ch-general', color: '#4A90E2' },
-                { id: 'ch-bug-reports', color: '#E74C3C' },
-                { id: 'ch-support', color: '#F39C12' },
-                { id: 'ch-dev-alerts', color: '#9B59B6' },
-                
-                // Owner nodes (middle)
-                { id: 'owner-alice', color: '#2ECC71' },
-                { id: 'owner-bob', color: '#3498DB' },
-                { id: 'owner-carol', color: '#E67E22' },
-                { id: 'owner-david', color: '#1ABC9C' },
-                
-                // Development card nodes (right side)
-                { id: 'card-sc1', color: '#F1C40F' },
-                { id: 'card-sc2', color: '#E91E63' },
-                { id: 'card-sc3', color: '#8E44AD' },
-                { id: 'card-sc4', color: '#27AE60' },
-                { id: 'card-sc5', color: '#34495E' },
-              ],
-              links: [
-                // Channel to Owner flows (higher values for better visibility)
-                { source: 'ch-general', target: 'owner-alice', value: 120 },
-                { source: 'ch-general', target: 'owner-bob', value: 80 },
-                { source: 'ch-bug-reports', target: 'owner-carol', value: 200 },
-                { source: 'ch-bug-reports', target: 'owner-david', value: 150 },
-                { source: 'ch-support', target: 'owner-alice', value: 60 },
-                { source: 'ch-support', target: 'owner-carol', value: 90 },
-                { source: 'ch-dev-alerts', target: 'owner-bob', value: 40 },
-                { source: 'ch-dev-alerts', target: 'owner-david', value: 70 },
-                
-                // Owner to Development Card flows
-                { source: 'owner-alice', target: 'card-sc1', value: 45 },
-                { source: 'owner-alice', target: 'card-sc2', value: 25 },
-                { source: 'owner-bob', target: 'card-sc3', value: 35 },
-                { source: 'owner-bob', target: 'card-sc4', value: 30 },
-                { source: 'owner-carol', target: 'card-sc4', value: 50 },
-                { source: 'owner-carol', target: 'card-sc5', value: 40 },
-                { source: 'owner-david', target: 'card-sc1', value: 35 },
-                { source: 'owner-david', target: 'card-sc5', value: 25 },
-              ]
-            }}
-            margin={{ top: 40, right: 120, bottom: 40, left: 120 }}
-            align="justify"
-            colors={{ scheme: 'nivo' }}
-            nodeOpacity={1}
-            nodeHoverOthersOpacity={0.2}
-            nodeThickness={24}
-            nodeSpacing={20}
-            nodeBorderWidth={2}
-            nodeBorderColor={{ from: 'color', modifiers: [['darker', 0.5]] }}
-            linkOpacity={0.7}
-            linkHoverOthersOpacity={0.1}
-            linkContract={4}
-            enableLinkGradient={true}
-            labelPosition="outside"
-            labelOrientation="horizontal"
-            labelPadding={16}
-            labelTextColor={{ from: 'color', modifiers: [['darker', 1.4]] }}
-          />
+      {/* Advanced Network Visualization */}
+      <Card title="Advanced Network Flow: Channels → Owners → Development Cards" className="mb-6 grafana-card">
+        <div className="h-96 chart-container rounded-lg p-6" style={{ background: 'linear-gradient(135deg, #161b22 0%, #21262d 100%)' }}>
+          <svg width="100%" height="100%" viewBox="0 0 900 360" className="overflow-visible">
+            <defs>
+              {/* Animated gradients for connections */}
+              <linearGradient id="channelToOwnerGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#4A90E2" stopOpacity="0.8" />
+                <stop offset="100%" stopColor="#2ECC71" stopOpacity="0.6" />
+              </linearGradient>
+              <linearGradient id="ownerToCardGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#2ECC71" stopOpacity="0.8" />
+                <stop offset="100%" stopColor="#F39C12" stopOpacity="0.6" />
+              </linearGradient>
+              
+              {/* Glow effects */}
+              <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                <feMerge>
+                  <feMergeNode in="coloredBlur"/>
+                  <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+              </filter>
+              
+              {/* Pulse animation */}
+              <style>
+                {`
+                  .pulse-circle {
+                    animation: pulse 2s infinite;
+                  }
+                  @keyframes pulse {
+                    0%, 100% { r: 20; opacity: 1; }
+                    50% { r: 30; opacity: 0.5; }
+                  }
+                  .flow-line {
+                    stroke-dasharray: 10, 5;
+                    animation: flow 3s linear infinite;
+                  }
+                  @keyframes flow {
+                    0% { stroke-dashoffset: 0; }
+                    100% { stroke-dashoffset: 30; }
+                  }
+                `}
+              </style>
+            </defs>
+
+            {/* Channel Nodes (Left Side) */}
+            <g id="channels">
+              {['#general', '#bug-reports', '#support', '#dev-alerts'].map((channel, i) => (
+                <g key={`channel-${i}`} transform={`translate(120, ${60 + i * 80})`}>
+                  <circle
+                    cx="0"
+                    cy="0"
+                    r="25"
+                    fill="#4A90E2"
+                    stroke="#f0f6fc"
+                    strokeWidth="2"
+                    filter="url(#glow)"
+                    className="pulse-circle"
+                  />
+                  <text
+                    x="0"
+                    y="0"
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    fill="#f0f6fc"
+                    fontSize="10"
+                    fontWeight="bold"
+                  >
+                    {channel.replace('#', '')}
+                  </text>
+                  <text
+                    x="0"
+                    y="45"
+                    textAnchor="middle"
+                    fill="#8b949e"
+                    fontSize="12"
+                    fontWeight="bold"
+                  >
+                    {channel}
+                  </text>
+                </g>
+              ))}
+            </g>
+
+            {/* Owner Nodes (Middle) */}
+            <g id="owners">
+              {['Alice Chen', 'Bob Wilson', 'Carol Davis', 'David Park'].map((owner, i) => (
+                <g key={`owner-${i}`} transform={`translate(450, ${80 + i * 70})`}>
+                  <circle
+                    cx="0"
+                    cy="0"
+                    r="22"
+                    fill="#2ECC71"
+                    stroke="#f0f6fc"
+                    strokeWidth="2"
+                    filter="url(#glow)"
+                  />
+                  <text
+                    x="0"
+                    y="0"
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    fill="#f0f6fc"
+                    fontSize="9"
+                    fontWeight="bold"
+                  >
+                    {owner.split(' ')[0]}
+                  </text>
+                  <text
+                    x="0"
+                    y="40"
+                    textAnchor="middle"
+                    fill="#8b949e"
+                    fontSize="10"
+                    fontWeight="500"
+                  >
+                    {owner}
+                  </text>
+                </g>
+              ))}
+            </g>
+
+            {/* Development Card Nodes (Right Side) */}
+            <g id="cards">
+              {['Feature-Auth', 'Bug-Payment', 'Enhancement-UI', 'Fix-Database', 'Update-API'].map((card, i) => (
+                <g key={`card-${i}`} transform={`translate(780, ${50 + i * 60})`}>
+                  <rect
+                    x="-30"
+                    y="-15"
+                    width="60"
+                    height="30"
+                    rx="8"
+                    fill="#F39C12"
+                    stroke="#f0f6fc"
+                    strokeWidth="2"
+                    filter="url(#glow)"
+                  />
+                  <text
+                    x="0"
+                    y="0"
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    fill="#f0f6fc"
+                    fontSize="8"
+                    fontWeight="bold"
+                  >
+                    {card.split('-')[1]}
+                  </text>
+                  <text
+                    x="0"
+                    y="35"
+                    textAnchor="middle"
+                    fill="#8b949e"
+                    fontSize="9"
+                    fontWeight="500"
+                  >
+                    {card}
+                  </text>
+                </g>
+              ))}
+            </g>
+
+            {/* Animated Connection Lines */}
+            <g id="connections">
+              {/* Channels to Owners */}
+              {[0, 1, 2, 3].map(channelIndex => 
+                [0, 1, 2, 3].map(ownerIndex => {
+                  if (Math.random() > 0.6) return null; // 40% chance of connection
+                  const y1 = 60 + channelIndex * 80;
+                  const y2 = 80 + ownerIndex * 70;
+                  const thickness = Math.floor(Math.random() * 8) + 2;
+                  
+                  return (
+                    <line
+                      key={`ch-${channelIndex}-ow-${ownerIndex}`}
+                      x1="145"
+                      y1={y1}
+                      x2="428"
+                      y2={y2}
+                      stroke="url(#channelToOwnerGradient)"
+                      strokeWidth={thickness}
+                      strokeLinecap="round"
+                      className="flow-line"
+                      opacity="0.8"
+                    />
+                  );
+                })
+              )}
+              
+              {/* Owners to Cards */}
+              {[0, 1, 2, 3].map(ownerIndex => 
+                [0, 1, 2, 3, 4].map(cardIndex => {
+                  if (Math.random() > 0.7) return null; // 30% chance of connection
+                  const y1 = 80 + ownerIndex * 70;
+                  const y2 = 50 + cardIndex * 60;
+                  const thickness = Math.floor(Math.random() * 6) + 2;
+                  
+                  return (
+                    <line
+                      key={`ow-${ownerIndex}-card-${cardIndex}`}
+                      x1="472"
+                      y1={y1}
+                      x2="750"
+                      y2={y2}
+                      stroke="url(#ownerToCardGradient)"
+                      strokeWidth={thickness}
+                      strokeLinecap="round"
+                      className="flow-line"
+                      opacity="0.8"
+                    />
+                  );
+                })
+              )}
+            </g>
+
+            {/* Flow Indicators */}
+            <g id="flow-indicators">
+              <text x="280" y="30" textAnchor="middle" fill="#ff7043" fontSize="14" fontWeight="bold">
+                📨 Reports Flow
+              </text>
+              <text x="615" y="30" textAnchor="middle" fill="#ff7043" fontSize="14" fontWeight="bold">
+                🔧 Development Flow
+              </text>
+            </g>
+
+            {/* Legend */}
+            <g id="legend" transform="translate(50, 320)">
+              <circle cx="15" cy="0" r="8" fill="#4A90E2" />
+              <text x="30" y="4" fill="#f0f6fc" fontSize="11">Slack Channels</text>
+              
+              <circle cx="140" cy="0" r="8" fill="#2ECC71" />
+              <text x="155" y="4" fill="#f0f6fc" fontSize="11">Ticket Owners</text>
+              
+              <rect x="255" y="-6" width="16" height="12" rx="3" fill="#F39C12" />
+              <text x="278" y="4" fill="#f0f6fc" fontSize="11">Development Cards</text>
+            </g>
+          </svg>
         </div>
         
-        {/* Flow Summary */}
+        {/* Network Stats */}
         <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-blue-50 p-4 rounded-lg text-center border border-blue-200">
-            <div className="text-2xl font-bold text-blue-600">4</div>
-            <div className="text-sm text-gray-600 font-medium">Slack Channels</div>
-            <div className="text-xs text-gray-500 mt-1">#general, #bug-reports, #support, #dev-alerts</div>
+          <div className="p-4 rounded-lg text-center border" style={{ background: '#21262d', borderColor: '#30363d' }}>
+            <div className="text-2xl font-bold" style={{ color: '#4A90E2' }}>4</div>
+            <div className="text-sm font-medium" style={{ color: '#f0f6fc' }}>Slack Channels</div>
+            <div className="text-xs mt-1" style={{ color: '#8b949e' }}>Active reporting channels</div>
           </div>
-          <div className="bg-green-50 p-4 rounded-lg text-center border border-green-200">
-            <div className="text-2xl font-bold text-green-600">4</div>
-            <div className="text-sm text-gray-600 font-medium">Ticket Owners</div>
-            <div className="text-xs text-gray-500 mt-1">Alice, Bob, Carol, David</div>
+          <div className="p-4 rounded-lg text-center border" style={{ background: '#21262d', borderColor: '#30363d' }}>
+            <div className="text-2xl font-bold" style={{ color: '#2ECC71' }}>4</div>
+            <div className="text-sm font-medium" style={{ color: '#f0f6fc' }}>Ticket Owners</div>
+            <div className="text-xs mt-1" style={{ color: '#8b949e' }}>Team members handling tickets</div>
           </div>
-          <div className="bg-orange-50 p-4 rounded-lg text-center border border-orange-200">
-            <div className="text-2xl font-bold text-orange-600">5</div>
-            <div className="text-sm text-gray-600 font-medium">Development Cards</div>
-            <div className="text-xs text-gray-500 mt-1">Active Shortcut cards</div>
+          <div className="p-4 rounded-lg text-center border" style={{ background: '#21262d', borderColor: '#30363d' }}>
+            <div className="text-2xl font-bold" style={{ color: '#F39C12' }}>5</div>
+            <div className="text-sm font-medium" style={{ color: '#f0f6fc' }}>Development Cards</div>
+            <div className="text-xs mt-1" style={{ color: '#8b949e' }}>Active development work</div>
           </div>
         </div>
       </Card>
