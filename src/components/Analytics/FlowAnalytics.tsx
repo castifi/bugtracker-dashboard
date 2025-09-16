@@ -173,35 +173,102 @@ const FlowAnalytics: React.FC = () => {
 
       {/* Flow Visualization */}
       <Card title="Ticket Flow Diagram" className="mb-6">
-        <div className="h-80 flex items-center justify-center bg-gray-50 rounded-lg">
-          <div className="text-center space-y-4">
-            {analyticsData.visualization_data.nodes.map((node, index) => (
-              <div key={node.id} className="flex items-center justify-center space-x-8">
-                <div 
-                  className="w-32 h-16 rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-lg"
-                  style={{ backgroundColor: node.color }}
-                >
-                  {node.label}
-                </div>
-                {index < analyticsData.visualization_data.nodes.length - 1 && (
-                  <div className="flex-1 h-1 bg-gray-300 relative">
-                    {analyticsData.visualization_data.edges.map((edge, edgeIndex) => (
-                      edge.source === node.id && (
-                        <div key={edgeIndex} className="absolute -top-6 left-1/2 transform -translate-x-1/2">
-                          <div className="bg-white px-2 py-1 rounded border text-xs font-medium">
-                            {edge.label}
-                          </div>
-                          <div className="text-xs text-gray-500 text-center mt-1">
-                            Avg: {formatHours(edge.avg_resolution_hours)}
-                          </div>
-                        </div>
-                      )
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
+        <div className="h-80 bg-gray-50 rounded-lg p-4">
+          <svg width="100%" height="100%" viewBox="0 0 800 280" className="overflow-visible">
+            {/* Background */}
+            <rect width="800" height="280" fill="#f8fafc" rx="8" />
+            
+            {/* Nodes */}
+            {/* Slack Node */}
+            <g>
+              <rect x="50" y="40" width="120" height="200" fill="#4A90E2" rx="8" />
+              <text x="110" y="125" textAnchor="middle" fill="white" fontSize="14" fontWeight="bold">
+                Slack Reports
+              </text>
+              <text x="110" y="150" textAnchor="middle" fill="white" fontSize="24" fontWeight="bold">
+                {analyticsData.summary.total_slack_tickets}
+              </text>
+            </g>
+            
+            {/* Zendesk Node */}
+            <g>
+              <rect x="340" y="65" width="120" height="150" fill="#7ED321" rx="8" />
+              <text x="400" y="125" textAnchor="middle" fill="white" fontSize="14" fontWeight="bold">
+                Zendesk Tickets
+              </text>
+              <text x="400" y="150" textAnchor="middle" fill="white" fontSize="24" fontWeight="bold">
+                {analyticsData.summary.total_zendesk_tickets}
+              </text>
+            </g>
+            
+            {/* Shortcut Node */}
+            <g>
+              <rect x="630" y="90" width="120" height="100" fill="#F5A623" rx="8" />
+              <text x="690" y="125" textAnchor="middle" fill="white" fontSize="14" fontWeight="bold">
+                Shortcut Cards
+              </text>
+              <text x="690" y="150" textAnchor="middle" fill="white" fontSize="24" fontWeight="bold">
+                {analyticsData.summary.total_shortcut_cards}
+              </text>
+            </g>
+            
+            {/* Flow Paths - Sankey Style */}
+            {/* Slack to Zendesk Flow */}
+            <path
+              d="M 170 140 Q 255 100 340 140"
+              stroke="#60A5FA"
+              strokeWidth="60"
+              fill="none"
+              opacity="0.6"
+            />
+            
+            {/* Zendesk to Shortcut Flow */}
+            <path
+              d="M 460 140 Q 545 130 630 140"
+              stroke="#34D399"
+              strokeWidth="35"
+              fill="none"
+              opacity="0.6"
+            />
+            
+            {/* Flow Labels with Background */}
+            <g>
+              <rect x="220" y="85" width="100" height="30" fill="white" stroke="#ddd" rx="4" opacity="0.95" />
+              <text x="270" y="103" textAnchor="middle" fontSize="12" fontWeight="bold">
+                ~93% Flow Rate
+              </text>
+            </g>
+            
+            <g>
+              <rect x="510" y="105" width="100" height="50" fill="white" stroke="#ddd" rx="4" opacity="0.95" />
+              <text x="560" y="123" textAnchor="middle" fontSize="12" fontWeight="bold">
+                {analyticsData.summary.connected_tickets} Connected
+              </text>
+              <text x="560" y="140" textAnchor="middle" fontSize="10" fill="#666">
+                Avg: {formatHours(analyticsData.resolution_metrics.average_resolution_hours)}
+              </text>
+            </g>
+            
+            {/* Conversion Rate Badge */}
+            <g>
+              <circle cx="690" cy="210" r="30" fill="#8B5CF6" />
+              <text x="690" y="205" textAnchor="middle" fill="white" fontSize="11" fontWeight="bold">
+                {getConversionPercentage(analyticsData.source_analytics.conversion_rate.tickets_to_cards)}
+              </text>
+              <text x="690" y="220" textAnchor="middle" fill="white" fontSize="9">
+                End-to-End
+              </text>
+            </g>
+            
+            {/* Legend */}
+            <g>
+              <text x="50" y="260" fontSize="12" fill="#666" fontWeight="bold">Flow Width = Volume</text>
+              <line x1="180" y1="255" x2="220" y2="255" stroke="#60A5FA" strokeWidth="6" opacity="0.6" />
+              <text x="230" y="259" fontSize="10" fill="#666">High Volume</text>
+              <line x1="320" y1="255" x2="360" y2="255" stroke="#34D399" strokeWidth="4" opacity="0.6" />
+              <text x="370" y="259" fontSize="10" fill="#666">Connected Flow</text>
+            </g>
+          </svg>
         </div>
       </Card>
 
