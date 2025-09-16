@@ -571,37 +571,43 @@ const BugList: React.FC<BugListProps> = ({
         onCancel={() => setDetailModalVisible(false)}
         footer={null}
         width={800}
+        className="bug-detail-modal"
       >
         {selectedBug && (
-          <div>
-            <h3>Ticket ID: {selectedBug.PK || 'N/A'}</h3>
-            <p><strong>Source:</strong> {selectedBug.sourceSystem || 'N/A'}</p>
-            <p><strong>Created:</strong> {selectedBug.createdAt ? new Date(selectedBug.createdAt).toLocaleString() : 'N/A'}</p>
-            <p><strong>Updated:</strong> {selectedBug.updatedAt ? new Date(selectedBug.updatedAt).toLocaleString() : 'N/A'}</p>
-            {selectedBug.priority && <p><strong>Priority:</strong> {selectedBug.priority}</p>}
-            {selectedBug.state && <p><strong>State:</strong> {selectedBug.state}</p>}
-            {selectedBug.state_id && selectedBug.sourceSystem === 'shortcut' && <p><strong>State ID:</strong> {safeRender(selectedBug.state_id)}</p>}
-            {selectedBug.status && <p><strong>Status:</strong> {selectedBug.status}</p>}
-            {selectedBug.subject && <p><strong>Subject:</strong> {selectedBug.subject}</p>}
-            {selectedBug.name && <p><strong>Name:</strong> {selectedBug.name}</p>}
+          <div style={{ color: '#f0f6fc' }}>
+            <h3 style={{ color: '#f0f6fc', marginBottom: '16px' }}>Ticket ID: {selectedBug.PK || 'N/A'}</h3>
+            <p style={{ color: '#f0f6fc', marginBottom: '8px' }}><strong>Source:</strong> {selectedBug.sourceSystem || 'N/A'}</p>
+            <p style={{ color: '#f0f6fc', marginBottom: '8px' }}><strong>Created:</strong> {selectedBug.createdAt ? new Date(selectedBug.createdAt).toLocaleString() : 'N/A'}</p>
+            <p style={{ color: '#f0f6fc', marginBottom: '8px' }}><strong>Updated:</strong> {selectedBug.updatedAt ? new Date(selectedBug.updatedAt).toLocaleString() : 'N/A'}</p>
+            {selectedBug.priority && <p style={{ color: '#f0f6fc', marginBottom: '8px' }}><strong>Priority:</strong> {selectedBug.priority}</p>}
+            {selectedBug.state && <p style={{ color: '#f0f6fc', marginBottom: '8px' }}><strong>State:</strong> {selectedBug.state}</p>}
+            {selectedBug.state_id && selectedBug.sourceSystem === 'shortcut' && <p style={{ color: '#f0f6fc', marginBottom: '8px' }}><strong>State ID:</strong> {safeRender(selectedBug.state_id)}</p>}
+            {selectedBug.status && <p style={{ color: '#f0f6fc', marginBottom: '8px' }}><strong>Status:</strong> {selectedBug.status}</p>}
+            {selectedBug.subject && <p style={{ color: '#f0f6fc', marginBottom: '8px' }}><strong>Subject:</strong> {selectedBug.subject}</p>}
+            {selectedBug.name && <p style={{ color: '#f0f6fc', marginBottom: '8px' }}><strong>Name:</strong> {selectedBug.name}</p>}
             {selectedBug.text && (
-              <div>
-                <strong>Text:</strong>
+              <div style={{ marginBottom: '16px' }}>
+                <strong style={{ color: '#f0f6fc' }}>Text:</strong>
                 <div style={{ 
-                  background: '#f5f5f5', 
-                  padding: '10px', 
-                  marginTop: '5px',
-                  borderRadius: '4px',
-                  whiteSpace: 'pre-wrap'
+                  background: '#21262d', 
+                  border: '1px solid #30363d',
+                  padding: '12px', 
+                  marginTop: '8px',
+                  borderRadius: '6px',
+                  whiteSpace: 'pre-wrap',
+                  color: '#f0f6fc',
+                  fontSize: '14px',
+                  lineHeight: '1.5',
+                  fontFamily: 'Monaco, "Courier New", monospace'
                 }}>
                   {safeRender(selectedBug.text)}
                 </div>
               </div>
             )}
-            {selectedBug.author && <p><strong>Author:</strong> {safeRender(selectedBug.author)}</p>}
-            {selectedBug.author_id && selectedBug.sourceSystem === 'slack' && <p><strong>Author ID:</strong> {safeRender(selectedBug.author_id)}</p>}
-            {selectedBug.requester && <p><strong>Requester:</strong> {safeRender(selectedBug.requester)}</p>}
-            {selectedBug.assignee && <p><strong>Assignee:</strong> {safeRender(selectedBug.assignee)}</p>}
+            {selectedBug.author && <p style={{ color: '#f0f6fc', marginBottom: '8px' }}><strong>Author:</strong> {safeRender(selectedBug.author)}</p>}
+            {selectedBug.author_id && selectedBug.sourceSystem === 'slack' && <p style={{ color: '#f0f6fc', marginBottom: '8px' }}><strong>Author ID:</strong> {safeRender(selectedBug.author_id)}</p>}
+            {selectedBug.requester && <p style={{ color: '#f0f6fc', marginBottom: '8px' }}><strong>Requester:</strong> {safeRender(selectedBug.requester)}</p>}
+            {selectedBug.assignee && <p style={{ color: '#f0f6fc', marginBottom: '8px' }}><strong>Assignee:</strong> {safeRender(selectedBug.assignee)}</p>}
           </div>
         )}
       </Modal>
