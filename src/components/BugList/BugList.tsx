@@ -32,12 +32,66 @@ const BugListContainer = styled.div`
 `;
 
 const FilterCard = styled(Card)`
-  margin-bottom: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 24px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  border: 1px solid #e8e8e8;
+  
+  .ant-card-body {
+    padding: 24px;
+  }
 `;
 
 const BugTableCard = styled(Card)`
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  border: 1px solid #e8e8e8;
+  
+  .ant-card-body {
+    padding: 0;
+  }
+  
+  .modern-table {
+    .ant-table-thead > tr > th {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      font-weight: 600;
+      font-size: 14px;
+      border: none;
+      text-align: center;
+      padding: 16px 12px;
+    }
+    
+    .ant-table-tbody > tr {
+      transition: all 0.2s ease;
+      
+      &:hover {
+        background: #f0f7ff !important;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      }
+      
+      &.table-row.even {
+        background: #fafafa;
+      }
+      
+      &.table-row.odd {
+        background: #ffffff;
+      }
+      
+      td {
+        padding: 12px;
+        border-bottom: 1px solid #f0f0f0;
+        vertical-align: middle;
+      }
+    }
+    
+    .ant-table-pagination {
+      padding: 16px 24px;
+      background: #fafafa;
+      border-top: 1px solid #f0f0f0;
+    }
+  }
 `;
 
 interface BugItem {
@@ -493,7 +547,20 @@ const BugList: React.FC<BugListProps> = ({
             showQuickJumper: true,
             showTotal: (total, range) => 
               `${range[0]}-${range[1]} of ${total} items`,
+            size: 'default',
+            style: { padding: '16px 0' }
           }}
+          scroll={{ x: 1400 }}
+          size="middle"
+          className="modern-table"
+          style={{
+            background: '#fff',
+            borderRadius: '8px',
+            overflow: 'hidden'
+          }}
+          rowClassName={(record, index) => 
+            `table-row ${index % 2 === 0 ? 'even' : 'odd'}`
+          }
         />
       </BugTableCard>
 
