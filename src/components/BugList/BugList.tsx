@@ -162,13 +162,14 @@ const BugList: React.FC<BugListProps> = ({
       setBugs([]);
       setFilteredBugs([]);
       
-      // FIXED: Always fetch all data and filter client-side for reliability
+      // IMPROVED: Fetch only selected source when filtering, all sources when showing all
       let allBugs: BugItem[] = [];
-      const allSources = ['slack', 'zendesk', 'shortcut'];
+      const sourcesToFetch = selectedSource === 'all' ? ['slack', 'zendesk', 'shortcut'] : [selectedSource];
 
       console.log(`🔍 FETCHING DATA - Selected source filter: "${selectedSource}"`);
+      console.log(`📋 Sources to fetch: [${sourcesToFetch.join(', ')}]`);
 
-      for (const source of allSources) {
+      for (const source of sourcesToFetch) {
         const params = new URLSearchParams({
           query_type: 'by_source',
           source_system: source
@@ -258,11 +259,11 @@ const BugList: React.FC<BugListProps> = ({
       console.log('Shortcut bugs data structure:', shortcutBugs.slice(0, 2));
     }
 
-    // ENHANCED Source filter with case-insensitive matching and detailed debugging
+    // SIMPLIFIED Source filter - since we now fetch only the selected source from API
     console.log('🎯 FILTERING - Current selectedSource:', selectedSource);
     console.log('📊 BEFORE FILTERING - Total bugs:', bugs.length);
     
-    // Count bugs by source before filtering
+    // Count bugs by source for debugging
     const sourceCounts = {
       slack: bugs.filter(b => b.sourceSystem === 'slack').length,
       zendesk: bugs.filter(b => b.sourceSystem === 'zendesk').length,
@@ -270,55 +271,38 @@ const BugList: React.FC<BugListProps> = ({
       other: bugs.filter(b => b.sourceSystem && !['slack', 'zendesk', 'shortcut'].includes(b.sourceSystem)).length,
       null: bugs.filter(b => !b.sourceSystem).length,
     };
-    console.log('📈 Source distribution BEFORE filter:', sourceCounts);
+    console.log('📈 Source distribution:', sourceCounts);
     
-    console.log('📋 Sample bug sources:', bugs.slice(0, 5).map(b => ({ 
-      id: b.PK, 
-      source: b.sourceSystem,
-      sourceType: typeof b.sourceSystem 
-    })));
-    
+    // Since we fetch only the selected source from API, minimal client-side filtering needed
+    // Only apply source filter if selectedSource is 'all' and we have mixed data
     if (selectedSource !== 'all') {
-      console.log('🔍 Filtering by source:', selectedSource);
       const beforeFilter = filtered.length;
       
-      filtered = filtered.filter(bug => {
-        // Normalize both values for comparison (case-insensitive)
+      // Sanity check: alert if wrong source data is present
+      const wrongSourceRecords = filtered.filter(bug => {
         const bugSource = (bug.sourceSystem || '').toString().toLowerCase().trim();
         const filterSource = selectedSource.toLowerCase().trim();
-        const match = bugSource === filterSource;
-        
-        return match;
+        return bugSource !== filterSource;
       });
       
-      console.log(`✅ FILTER RESULT: ${beforeFilter} → ${filtered.length} items (${selectedSource})`);
-      
-      // Count bugs by source AFTER filtering
-      const filteredSourceCounts = {
-        slack: filtered.filter(b => b.sourceSystem === 'slack').length,
-        zendesk: filtered.filter(b => b.sourceSystem === 'zendesk').length,
-        shortcut: filtered.filter(b => b.sourceSystem === 'shortcut').length,
-        other: filtered.filter(b => b.sourceSystem && !['slack', 'zendesk', 'shortcut'].includes(b.sourceSystem)).length,
-        null: filtered.filter(b => !b.sourceSystem).length,
-      };
-      console.log('📈 Source distribution AFTER filter:', filteredSourceCounts);
-      
-      // Alert if Slack records are showing when filtering for other sources
-      if (selectedSource !== 'slack' && filteredSourceCounts.slack > 0) {
-        console.error('🚨 BUG DETECTED: Slack records showing when filtering for', selectedSource);
-        console.error('🔍 Slack records that passed filter:', filtered.filter(b => b.sourceSystem === 'slack').slice(0, 3).map(b => ({
+      if (wrongSourceRecords.length > 0) {
+        console.error('🚨 UNEXPECTED: Wrong source records found when filtering for', selectedSource);
+        console.error('🔍 Wrong source records:', wrongSourceRecords.slice(0, 3).map(b => ({
           id: b.PK,
-          sourceSystem: b.sourceSystem,
-          rawSourceSystem: JSON.stringify(b.sourceSystem)
+          expected: selectedSource,
+          actual: b.sourceSystem
         })));
-      }
-      
-      if (filtered.length === 0 && bugs.length > 0) {
-        const uniqueSources = Array.from(new Set(bugs.map(b => b.sourceSystem)));
-        console.warn('⚠️ NO ITEMS MATCH FILTER! Check source values:', {
-          availableSources: uniqueSources,
-          selectedFilter: selectedSource
+        
+        // Filter out wrong source records as backup
+        filtered = filtered.filter(bug => {
+          const bugSource = (bug.sourceSystem || '').toString().toLowerCase().trim();
+          const filterSource = selectedSource.toLowerCase().trim();
+          return bugSource === filterSource;
         });
+        
+        console.log(`⚠️ BACKUP FILTER: ${beforeFilter} → ${filtered.length} items (removed ${wrongSourceRecords.length} wrong source records)`);
+      } else {
+        console.log(`✅ ALL RECORDS MATCH SOURCE: ${filtered.length} items for ${selectedSource}`);
       }
     }
 
