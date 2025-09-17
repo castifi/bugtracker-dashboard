@@ -181,8 +181,12 @@ const BugList: React.FC<BugListProps> = ({
         }
         
         try {
-          const response = await fetch(`${apiGatewayUrl}?${params.toString()}`, {
-            method: 'GET'
+          const response = await fetch(`${apiGatewayUrl}?${params.toString()}&_t=${Date.now()}`, {
+            method: 'GET',
+            cache: 'no-cache',
+            headers: {
+              'Cache-Control': 'no-cache'
+            }
           });
 
           if (response.ok) {
