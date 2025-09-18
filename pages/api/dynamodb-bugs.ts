@@ -71,11 +71,11 @@ export default async function handler(
       const end_date = req.query.end_date as string;
       
       // Use AWS CLI to scan DynamoDB table
-      let command = 'aws dynamodb scan --table-name BugTracker-dev --profile AdministratorAccess12hr-100142810612 --region us-west-2 --output json';
+      let command = 'aws dynamodb scan --table-name BugTracker-evt-bugtracker --profile AdministratorAccess12hr-100142810612 --region us-west-2 --output json';
       
       // Apply source filter if specified
       if (source_system && source_system !== 'all') {
-        command = `aws dynamodb scan --table-name BugTracker-dev --filter-expression "sourceSystem = :source" --expression-attribute-values '{":source":{"S":"${source_system}"}}' --profile AdministratorAccess12hr-100142810612 --region us-west-2 --output json`;
+        command = `aws dynamodb scan --table-name BugTracker-evt-bugtracker --filter-expression "sourceSystem = :source" --expression-attribute-values '{":source":{"S":"${source_system}"}}' --profile AdministratorAccess12hr-100142810612 --region us-west-2 --output json`;
       }
       
       const { stdout } = await execAsync(command);
@@ -136,11 +136,11 @@ export default async function handler(
       const days = req.query.days as string;
       
       // Use AWS CLI to scan DynamoDB table
-      let command = 'aws dynamodb scan --table-name BugTracker-dev --profile AdministratorAccess12hr-100142810612 --region us-west-2 --output json';
+      let command = 'aws dynamodb scan --table-name BugTracker-evt-bugtracker --profile AdministratorAccess12hr-100142810612 --region us-west-2 --output json';
       
       // Apply source filter if specified
       if (source_system && source_system !== 'all') {
-        command = `aws dynamodb scan --table-name BugTracker-dev --filter-expression "sourceSystem = :source" --expression-attribute-values '{":source":{"S":"${source_system}"}}' --profile AdministratorAccess12hr-100142810612 --region us-west-2 --output json`;
+        command = `aws dynamodb scan --table-name BugTracker-evt-bugtracker --filter-expression "sourceSystem = :source" --expression-attribute-values '{":source":{"S":"${source_system}"}}' --profile AdministratorAccess12hr-100142810612 --region us-west-2 --output json`;
       }
       
       const { stdout } = await execAsync(command);
@@ -200,9 +200,9 @@ export default async function handler(
 
       let command;
       if (source_system === 'all' || !source_system) {
-        command = 'aws dynamodb scan --table-name BugTracker-dev --profile AdministratorAccess12hr-100142810612 --region us-west-2 --output json';
+        command = 'aws dynamodb scan --table-name BugTracker-evt-bugtracker --profile AdministratorAccess12hr-100142810612 --region us-west-2 --output json';
       } else {
-        command = `aws dynamodb scan --table-name BugTracker-dev --filter-expression "sourceSystem = :source" --expression-attribute-values '{":source":{"S":"${source_system}"}}' --profile AdministratorAccess12hr-100142810612 --region us-west-2 --output json`;
+        command = `aws dynamodb scan --table-name BugTracker-evt-bugtracker --filter-expression "sourceSystem = :source" --expression-attribute-values '{":source":{"S":"${source_system}"}}' --profile AdministratorAccess12hr-100142810612 --region us-west-2 --output json`;
       }
 
       const { stdout } = await execAsync(command);
