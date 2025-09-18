@@ -611,8 +611,15 @@ const BugList: React.FC<BugListProps> = ({
           />
           <Button 
             icon={<FilterOutlined />} 
-            onClick={fetchBugs}
+            onClick={() => {
+              if (selectedSource === 'all') {
+                message.warning('Please select a specific source (Slack, Zendesk, or Shortcut) before refreshing');
+                return;
+              }
+              fetchBugs();
+            }}
             loading={loading}
+            disabled={selectedSource === 'all'}
           >
             Refresh
           </Button>
