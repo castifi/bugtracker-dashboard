@@ -158,9 +158,13 @@ const BugList: React.FC<BugListProps> = ({
     try {
       setLoading(true);
       
-      // Clear existing bugs when changing source filter
+      // AGGRESSIVE CLEAR: Remove existing bugs when changing source filter
+      console.log('🧹 CLEARING OLD DATA before fetch');
       setBugs([]);
       setFilteredBugs([]);
+      
+      // Force a small delay to ensure state is cleared
+      await new Promise(resolve => setTimeout(resolve, 50));
       
       // IMPROVED: Fetch only selected source when filtering, all sources when showing all
       let allBugs: BugItem[] = [];
@@ -230,11 +234,19 @@ const BugList: React.FC<BugListProps> = ({
   }, [apiGatewayUrl, timeRange, selectedSource]);
 
   useEffect(() => {
-    fetchBugs();
-    // Reset other filters when source changes
-    setSearchText('');
-    setSelectedPriority('all');
-    setSelectedState('all');
+    // Only fetch when a specific source is selected (not 'all')
+    if (selectedSource !== 'all') {
+      fetchBugs();
+      // Reset other filters when source changes
+      setSearchText('');
+      setSelectedPriority('all');
+      setSelectedState('all');
+    } else {
+      // Clear data when 'all' is selected to force user to pick a specific source
+      console.log('🚫 No specific source selected - showing empty state');
+      setBugs([]);
+      setFilteredBugs([]);
+    }
   }, [timeRange, selectedSource, fetchBugs]);
 
   useEffect(() => {
@@ -609,7 +621,22 @@ const BugList: React.FC<BugListProps> = ({
 
       {/* Bug Table */}
       <BugTableCard title={`Bug List (${filteredBugs.length} items)`}>
-        <Table
+        {selectedSource === 'all' && filteredBugs.length === 0 && !loading ? (
+          <div style={{ 
+            textAlign: 'center', 
+            padding: '40px 20px',
+            color: '#666',
+            background: '#f9f9f9',
+            borderRadius: '8px',
+            margin: '20px 0'
+          }}>
+            <h3 style={{ color: '#999', marginBottom: '16px' }}>📋 Select a Source to View Tickets</h3>
+            <p style={{ color: '#666', fontSize: '14px' }}>
+              Please select a specific source (Slack, Zendesk, or Shortcut) from the dropdown above to view tickets.
+            </p>
+          </div>
+        ) : (
+          <Table
           columns={columns}
           dataSource={filteredBugs}
           rowKey="SK"
@@ -636,6 +663,7 @@ const BugList: React.FC<BugListProps> = ({
             `table-row ${index % 2 === 0 ? 'even' : 'odd'}`
           }
         />
+        )}
       </BugTableCard>
 
       {/* Detail Modal */}
