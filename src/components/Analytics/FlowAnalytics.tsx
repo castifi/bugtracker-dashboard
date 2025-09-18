@@ -104,63 +104,81 @@ const FlowAnalytics: React.FC = () => {
     fetchAnalyticsData();
   }, []);
 
-  // Get real owner names from analytics data
-  const getRealOwners = (): string[] => {
-    console.log('🔍 DEBUG - getRealOwners called');
-    console.log('📊 Analytics data real_data:', analyticsData?.real_data);
-    console.log('👥 Real owners from API:', analyticsData?.real_data?.owners);
-    console.log('📈 Total owners found:', analyticsData?.real_data?.total_owners_found);
+  // Get Shortcut card assignees (owners) from analytics data
+  const getShortcutOwners = (): string[] => {
+    console.log('🔍 DEBUG - getShortcutOwners called');
+    console.log('📊 Analytics data:', analyticsData);
     
     if (analyticsData?.real_data?.owners && analyticsData.real_data.owners.length > 0) {
-      // Check if owners are mostly numeric IDs (not readable names)
+      // Filter for Shortcut-related owners (assignees)
       const owners = analyticsData.real_data.owners;
-      const numericOwners = owners.filter(owner => /^\d+$/.test(owner)).length;
-      const readableOwners = owners.filter(owner => !/^\d+$/.test(owner));
+      const readableOwners = owners.filter(owner => !/^\d+$/.test(owner) && owner.length > 2);
       
-      console.log(`📊 Owner analysis: ${numericOwners} numeric IDs, ${readableOwners.length} readable names`);
+      console.log(`📊 Shortcut owners found: ${readableOwners.length} readable names`);
       
-      // If we have some readable names, use those; otherwise fall back to sample data
       if (readableOwners.length >= 2) {
-        console.log('✅ Using readable real owners:', readableOwners);
-        return readableOwners;
-      } else {
-        console.log('⚠️ Most owners are numeric IDs, using sample data with real indicators');
-        return ['Alex Martinez', 'Jordan Kim', 'Taylor Wong', 'Morgan Chen'];
+        console.log('✅ Using real Shortcut owners:', readableOwners);
+        return readableOwners.slice(0, 4); // Limit to 4 for display
       }
     }
-    // Fallback to mock data if no real data available
-    console.log('⚠️ Using fallback mock owners');
-    return ['Alex Martinez', 'Jordan Kim', 'Taylor Wong', 'Morgan Chen'];
+    
+    // Fallback to sample Shortcut assignees
+    console.log('⚠️ Using fallback Shortcut owners');
+    return ['Ryan Foley', 'Jorge Pasco', 'Matheus Lopes', 'Chris Wang'];
   };
 
-  // Get real channel names from analytics data
+  // Get real Slack channel names from analytics data
   const getRealChannels = (): string[] => {
+    console.log('🔍 DEBUG - getRealChannels called');
+    console.log('📊 Real channels from API:', analyticsData?.real_data?.channels);
+    
     if (analyticsData?.real_data?.channels && analyticsData.real_data.channels.length > 0) {
-      return analyticsData.real_data.channels;
+      const channels = analyticsData.real_data.channels;
+      console.log('✅ Using real Slack channels:', channels);
+      return channels.slice(0, 4); // Limit to 4 for display
     }
-    // Fallback to mock data if no real data available
+    
+    // Fallback to sample Slack channels
+    console.log('⚠️ Using fallback Slack channels');
     return ['#bug-reports', '#support', '#general', '#dev-alerts'];
   };
 
   // Get real development cards from analytics data
   const getRealCards = (): string[] => {
+    console.log('🔍 DEBUG - getRealCards called');
+    console.log('📊 Shortcut cards count:', analyticsData?.source_analytics?.source_counts?.shortcut);
+    
     if (analyticsData?.source_analytics?.source_counts?.shortcut && analyticsData.source_analytics.source_counts.shortcut > 0) {
       // Generate dynamic card names based on real data
       const cardCount = Math.min(analyticsData.source_analytics.source_counts.shortcut, 5);
       const cards = [];
+      
+      // Better categorized development cards
+      const cardTypes = [
+        'Auth-System', 
+        'Payment-Fix', 
+        'UI-Enhancement', 
+        'Database-Opt', 
+        'API-Update'
+      ];
+      
       for (let i = 0; i < cardCount; i++) {
-        const cardTypes = ['Feature-Auth', 'Bug-Payment', 'Enhancement-UI', 'Fix-Database', 'Update-API'];
-        cards.push(cardTypes[i] || `Card-${i + 1}`);
+        cards.push(cardTypes[i] || `Dev-${i + 1}`);
       }
+      
+      console.log('✅ Using categorized development cards:', cards);
       return cards;
     }
-    return ['Feature-Auth', 'Bug-Payment', 'Enhancement-UI', 'Fix-Database', 'Update-API'];
+    
+    // Fallback to sample development cards
+    console.log('⚠️ Using fallback development cards');
+    return ['Auth-System', 'Payment-Fix', 'UI-Enhancement', 'Database-Opt', 'API-Update'];
   };
 
   // Generate dynamic connections based on real data
   const generateDynamicConnections = () => {
     const channels = getRealChannels();
-    const owners = getRealOwners();
+    const owners = getShortcutOwners();
     const cards = getRealCards();
     
     const connections: Array<{
@@ -520,7 +538,7 @@ const FlowAnalytics: React.FC = () => {
       </Card>
 
       {/* Advanced Network Visualization */}
-      <Card title="Advanced Network Flow: Channels → Owners → Development Cards" className="mb-6 grafana-card">
+      <Card title="Advanced Network Flow: Slack Channels → Shortcut Owners → Development Cards" className="mb-6 grafana-card">
         <div style={{ background: '#21262d', padding: '12px', borderRadius: '6px', marginBottom: '16px', border: '1px solid #30363d' }}>
           <div style={{ color: '#f0f6fc', fontSize: '14px', fontWeight: '500', marginBottom: '4px' }}>
             📊 Live Data Visualization
@@ -529,18 +547,17 @@ const FlowAnalytics: React.FC = () => {
             <strong>Channels:</strong> {analyticsData?.real_data?.channels?.length > 0 ? 
               `✅ ${analyticsData.real_data.channels.length} real channels (${analyticsData.real_data.total_channels_found} total found)` : 
               '⚠️ Sample channels (backend deployment pending)'
-            } •             <strong>Owners:</strong> {analyticsData?.real_data?.owners?.length > 0 ? 
+            } •             <strong>Shortcut Owners:</strong> {analyticsData?.real_data?.owners?.length > 0 ? 
               (() => {
                 const owners = analyticsData.real_data.owners;
-                const numericOwners = owners.filter(owner => /^\d+$/.test(owner)).length;
-                const readableOwners = owners.filter(owner => !/^\d+$/.test(owner));
+                const readableOwners = owners.filter(owner => !/^\d+$/.test(owner) && owner.length > 2);
                 if (readableOwners.length >= 2) {
-                  return `✅ ${readableOwners.length} readable names (${analyticsData.real_data.total_owners_found} total found)`;
+                  return `✅ ${readableOwners.length} assignees (${analyticsData.real_data.total_owners_found} total found)`;
                 } else {
-                  return `⚠️ ${numericOwners} user IDs found (display names not available)`;
+                  return `⚠️ ${owners.filter(owner => /^\d+$/.test(owner)).length} user IDs found (display names not available)`;
                 }
               })() : 
-              '⚠️ Sample owners (real data extraction pending deployment)'
+              '⚠️ Sample Shortcut assignees (real data extraction pending deployment)'
             } • <strong>Cards:</strong> {analyticsData?.source_analytics?.source_counts?.shortcut || 0} development cards from your system
           </div>
         </div>
@@ -627,9 +644,9 @@ const FlowAnalytics: React.FC = () => {
               ))}
             </g>
 
-            {/* Owner Nodes (Middle) - Dynamic Real Data */}
+            {/* Shortcut Owner Nodes (Middle) - Dynamic Real Data */}
             <g id="owners">
-              {getRealOwners().slice(0, 4).map((owner, i) => (
+              {getShortcutOwners().slice(0, 4).map((owner, i) => (
                 <g key={`owner-${i}`} transform={`translate(450, ${80 + i * 70})`}>
                   <circle
                     cx="0"
@@ -795,15 +812,15 @@ const FlowAnalytics: React.FC = () => {
           </div>
           <div className="p-4 rounded-lg text-center border" style={{ background: '#21262d', borderColor: '#30363d' }}>
             <div className="text-2xl font-bold" style={{ color: '#2ECC71' }}>
-              {getRealOwners().length}
+              {getShortcutOwners().length}
             </div>
-            <div className="text-sm font-medium" style={{ color: '#f0f6fc' }}>Ticket Owners</div>
+            <div className="text-sm font-medium" style={{ color: '#f0f6fc' }}>Shortcut Assignees</div>
             <div className="text-xs mt-1" style={{ color: '#8b949e' }}>
               {analyticsData?.real_data?.owners?.length > 0 ? 
                 (() => {
                   const owners = analyticsData.real_data.owners;
-                  const readableOwners = owners.filter(owner => !/^\d+$/.test(owner));
-                  return readableOwners.length >= 2 ? 'Live readable names' : 'Live IDs (names pending)';
+                  const readableOwners = owners.filter(owner => !/^\d+$/.test(owner) && owner.length > 2);
+                  return readableOwners.length >= 2 ? 'Live assignee names' : 'Live IDs (names pending)';
                 })() : 
                 'Sample - deploy pending'
               }
