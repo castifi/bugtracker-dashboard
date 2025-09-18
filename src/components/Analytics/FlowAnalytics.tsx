@@ -331,28 +331,16 @@ const FlowAnalytics: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex justify-between items-center mb-6">
-        <div className="text-2xl font-bold" style={{ color: '#f0f6fc' }}>
+    <div className="space-y-4 p-4">
+      <div className="mb-4">
+        <div className="text-xl font-bold" style={{ color: '#f0f6fc' }}>
           End-to-End Ticket Flow Analytics
         </div>
-        <Button 
-          onClick={() => {
-            console.log('🔄 Force refreshing analytics data...');
-            setAnalyticsData(null);
-            setLoading(true);
-            fetchAnalyticsData();
-          }}
-          type="primary"
-          style={{ background: '#ff7043' }}
-        >
-          🔄 Refresh Data
-        </Button>
       </div>
 
       {/* Flow Visualization */}
-      <Card title="Ticket Flow Diagram" className="mb-6 grafana-card">
-        <div className="h-96 chart-container rounded-lg p-6" style={{ background: 'linear-gradient(135deg, #161b22 0%, #21262d 100%)' }}>
+      <Card title="Ticket Flow Diagram" className="mb-4 grafana-card">
+        <div className="h-64 chart-container rounded-lg p-4" style={{ background: 'linear-gradient(135deg, #161b22 0%, #21262d 100%)' }}>
           <svg width="100%" height="100%" viewBox="0 0 900 360" className="overflow-visible">
             <defs>
               {/* Gradients for beautiful effects */}
@@ -487,10 +475,10 @@ const FlowAnalytics: React.FC = () => {
               <rect x="250" y="140" width="120" height="40" fill="rgba(255,255,255,0.9)" 
                     stroke="rgba(255,255,255,0.3)" strokeWidth="1" rx="8" filter="url(#shadow)" />
               <text x="310" y="155" textAnchor="middle" fontSize="12" fontWeight="bold" fill="#4A90E2">
-                Reports → Tickets
+                Tickets → Reports
               </text>
               <text x="310" y="170" textAnchor="middle" fontSize="10" fill="#666">
-                ~93% Conversion
+                {Math.round((analyticsData.summary.total_slack_tickets / analyticsData.summary.total_zendesk_tickets) * 100)}% Conversion
               </text>
             </g>
             
@@ -498,10 +486,10 @@ const FlowAnalytics: React.FC = () => {
               <rect x="570" y="140" width="120" height="40" fill="rgba(255,255,255,0.9)" 
                     stroke="rgba(255,255,255,0.3)" strokeWidth="1" rx="8" filter="url(#shadow)" />
               <text x="630" y="155" textAnchor="middle" fontSize="12" fontWeight="bold" fill="#F5A623">
-                Tickets → Cards
+                Reports → Cards
               </text>
               <text x="630" y="170" textAnchor="middle" fontSize="10" fill="#666">
-                {Math.round((analyticsData.summary.total_shortcut_cards / analyticsData.summary.total_zendesk_tickets) * 100)}% Development
+                {Math.round((analyticsData.summary.total_shortcut_cards / analyticsData.summary.total_slack_tickets) * 100)}% Development
               </text>
             </g>
             
@@ -509,7 +497,7 @@ const FlowAnalytics: React.FC = () => {
             <g>
               <circle cx="450" cy="320" r="35" fill="url(#shortcutGradient)" filter="url(#shadow)" />
               <text x="450" y="315" textAnchor="middle" fill="white" fontSize="14" fontWeight="bold">
-                {getConversionPercentage(analyticsData.source_analytics.conversion_rate.tickets_to_cards)}
+                {Math.round((analyticsData.summary.total_shortcut_cards / analyticsData.summary.total_zendesk_tickets) * 100)}%
               </text>
               <text x="450" y="330" textAnchor="middle" fill="white" fontSize="10">
                 End-to-End Success
