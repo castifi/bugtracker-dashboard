@@ -282,8 +282,13 @@ const FlowAnalytics: React.FC = () => {
             }
           },
           resolution_metrics: {
-            avg_resolution_time: 0,
-            resolution_rate: 0
+            average_resolution_hours: 0,
+            median_resolution_hours: 0,
+            min_resolution_hours: 0,
+            max_resolution_hours: 0,
+            total_completed_cards: 0,
+            priority_breakdown: {},
+            resolution_distribution: {}
           },
           real_data: {
             owners: ['Javier Delgado', 'Francisco Pantoja', 'Ryan Foley', 'Jorge Pasco', 'Matheus Lopes', 'Chris Wang'],
