@@ -818,17 +818,30 @@ const FlowAnalytics: React.FC = () => {
 
             {/* Animated Connection Lines */}
             <g id="connections">
-              {/* Channels to Owners */}
-              {[0, 1, 2, 3].map(channelIndex => 
-                [0, 1, 2, 3, 4, 5].map(ownerIndex => {
-                  if (Math.random() > 0.6) return null; // 40% chance of connection
-                  const y1 = 60 + channelIndex * 80;
+              {/* Realistic Team Assignment Matrix */}
+              {/* Channels: 0=urgent-casting-platform, 1=urgent-casting, 2=product-vouchers, 3=urgent-vouchers */}
+              {/* Owners: 0=Javier, 1=Francisco, 2=Ryan, 3=Jorge, 4=Matheus, 5=Chris */}
+              {/* Cards: 0=Search&Explore, 1=Authentication, 2=Casting/Jobs, 3=Payroll, 4=Vouchers */}
+              
+              {/* Channel to Owner Connections (based on real expertise) */}
+              {[
+                // urgent-casting-platform: Javier (primary), Francisco, Jorge, Matheus
+                { channel: 0, owners: [0, 1, 3, 4], weights: [8, 6, 5, 4] },
+                // urgent-casting: Francisco (primary), Javier, Jorge
+                { channel: 1, owners: [1, 0, 3], weights: [8, 6, 5] },
+                // product-vouchers: Ryan (primary), Chris
+                { channel: 2, owners: [2, 5], weights: [8, 6] },
+                // urgent-vouchers: Ryan (primary), Chris, Francisco (support)
+                { channel: 3, owners: [2, 5, 1], weights: [8, 7, 4] }
+              ].map(({ channel, owners, weights }) =>
+                owners.map((ownerIndex, i) => {
+                  const y1 = 60 + channel * 80;
                   const y2 = 100 + ownerIndex * 85;
-                  const thickness = Math.floor(Math.random() * 8) + 2;
+                  const thickness = weights[i] / 2; // Convert weight to line thickness
                   
                   return (
                     <line
-                      key={`ch-${channelIndex}-ow-${ownerIndex}`}
+                      key={`ch-${channel}-ow-${ownerIndex}`}
                       x1="175"
                       y1={y1}
                       x2="428"
@@ -843,17 +856,29 @@ const FlowAnalytics: React.FC = () => {
                 })
               )}
               
-              {/* Owners to Cards */}
-              {[0, 1, 2, 3, 4, 5].map(ownerIndex => 
-                [0, 1, 2, 3, 4].map(cardIndex => {
-                  if (Math.random() > 0.7) return null; // 30% chance of connection
-                  const y1 = 100 + ownerIndex * 85;
+              {/* Owner to Card Connections (based on real responsibilities) */}
+              {[
+                // Javier: Casting/Jobs (primary), Search&Explore, Authentication
+                { owner: 0, cards: [2, 0, 1], weights: [8, 6, 5] },
+                // Francisco: Authentication (primary), Casting/Jobs, Payroll
+                { owner: 1, cards: [1, 2, 3], weights: [8, 6, 5] },
+                // Ryan: Vouchers (primary), Payroll
+                { owner: 2, cards: [4, 3], weights: [8, 6] },
+                // Jorge: Search&Explore (primary), Casting/Jobs
+                { owner: 3, cards: [0, 2], weights: [8, 6] },
+                // Matheus: Casting/Jobs (primary), Search&Explore
+                { owner: 4, cards: [2, 0], weights: [8, 6] },
+                // Chris: Vouchers (primary), Payroll, Authentication (support)
+                { owner: 5, cards: [4, 3, 1], weights: [8, 6, 4] }
+              ].map(({ owner, cards, weights }) =>
+                cards.map((cardIndex, i) => {
+                  const y1 = 100 + owner * 85;
                   const y2 = 60 + cardIndex * 70;
-                  const thickness = Math.floor(Math.random() * 6) + 2;
+                  const thickness = weights[i] / 2;
                   
                   return (
                     <line
-                      key={`ow-${ownerIndex}-card-${cardIndex}`}
+                      key={`ow-${owner}-card-${cardIndex}`}
                       x1="472"
                       y1={y1}
                       x2="720"
@@ -889,6 +914,22 @@ const FlowAnalytics: React.FC = () => {
               
               <rect x="255" y="-6" width="16" height="12" rx="3" fill="#F39C12" />
               <text x="278" y="4" fill="#f0f6fc" fontSize="11">Development Cards</text>
+            </g>
+
+            {/* Connection Legend */}
+            <g id="connection-legend" transform="translate(50, 570)">
+              <text x="0" y="0" fill="#f0f6fc" fontSize="12" fontWeight="bold">
+                Connection Logic:
+              </text>
+              <text x="0" y="15" fill="#8b949e" fontSize="10">
+                • Thick lines = Primary responsibility (e.g., Ryan → Vouchers)
+              </text>
+              <text x="0" y="30" fill="#8b949e" fontSize="10">
+                • Medium lines = Secondary involvement (e.g., Francisco → Casting)
+              </text>
+              <text x="0" y="45" fill="#8b949e" fontSize="10">
+                • Thin lines = Support role (e.g., Chris → Authentication)
+              </text>
             </g>
           </svg>
         </div>
