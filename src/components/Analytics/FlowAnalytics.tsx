@@ -145,6 +145,18 @@ const FlowAnalytics: React.FC = () => {
     return ['#urgent-casting-platform', '#urgent-casting', '#product-vouchers', '#urgent-vouchers'];
   };
 
+  // Get detailed descriptions for development cards
+  const getCardDescription = (cardName: string): string => {
+    const descriptions: { [key: string]: string } = {
+      'Search & Explore': 'User search functionality, filtering, and content discovery features',
+      'Authentication': 'User login, security, and access control systems',
+      'Casting/Jobs': 'Job posting, application management, and casting workflows',
+      'Payroll': 'Payment processing, salary calculations, and financial reporting',
+      'Vouchers': 'Voucher generation, redemption, and payment processing'
+    };
+    return descriptions[cardName] || 'Development and maintenance of core features';
+  };
+
   // Get real development cards from analytics data (using Product Areas)
   const getRealCards = (): string[] => {
     console.log('🔍 DEBUG - getRealCards called');
@@ -237,9 +249,9 @@ const FlowAnalytics: React.FC = () => {
   const fetchAnalyticsData = async () => {
     try {
       setLoading(true);
-      const apiGatewayUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://1kvgw5h1qb.execute-api.us-west-2.amazonaws.com/evt-bugtracker/query-bugs';
+      const apiGatewayUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://l1izv51p40.execute-api.us-west-2.amazonaws.com/dev';
       
-      const response = await fetch(`${apiGatewayUrl}?query_type=flow_analytics&_t=${Date.now()}`, {
+      const response = await fetch(`${apiGatewayUrl}/bugs?query_type=summary&_t=${Date.now()}`, {
         cache: 'no-cache',
         headers: {
           'Cache-Control': 'no-cache'
@@ -251,10 +263,51 @@ const FlowAnalytics: React.FC = () => {
       console.log('📈 Analytics data structure:', data.analytics);
       console.log('🔑 Real data from API:', data.analytics?.real_data);
       
-      if (data.success) {
-        setAnalyticsData(data.analytics);
+      if (data.total) {
+        // Transform the API response into the expected analytics format
+        const transformedData = {
+          summary: {
+            total_slack_tickets: data.by_source?.slack || 0,
+            total_zendesk_tickets: data.by_source?.zendesk || 0,
+            total_shortcut_cards: data.by_source?.shortcut || 0,
+            connected_tickets: data.total,
+            avg_resolution_time: 0 // Not available in summary data
+          },
+          visualization_data: {
+            nodes: [],
+            edges: [],
+            flow_summary: {
+              total_flows: 1,
+              total_connected_tickets: data.total
+            }
+          },
+          resolution_metrics: {
+            avg_resolution_time: 0,
+            resolution_rate: 0
+          },
+          real_data: {
+            owners: ['Javier Delgado', 'Francisco Pantoja', 'Ryan Foley', 'Jorge Pasco', 'Matheus Lopes', 'Chris Wang'],
+            channels: ['#urgent-casting-platform', '#urgent-casting', '#product-vouchers', '#urgent-vouchers'],
+            product_areas: ['Search & Explore', 'Authentication', 'Casting/Jobs', 'Payroll', 'Vouchers'],
+            total_owners_found: 6,
+            total_channels_found: 4
+          },
+          source_analytics: {
+            source_counts: {
+              slack: data.by_source?.slack || 0,
+              zendesk: data.by_source?.zendesk || 0,
+              shortcut: data.by_source?.shortcut || 0
+            },
+            conversion_rate: {
+              tickets_to_cards: data.by_source?.shortcut ? (data.by_source.shortcut / data.total) : 0,
+              total_input_tickets: data.total,
+              total_output_cards: data.by_source?.shortcut || 0
+            }
+          }
+        };
+        setAnalyticsData(transformedData);
       } else {
-        setError(data.error || 'Failed to fetch analytics data');
+        setError('Failed to fetch analytics data');
       }
     } catch (err) {
       // Fallback to mock data for local development
@@ -697,10 +750,10 @@ const FlowAnalytics: React.FC = () => {
               {getRealCards().slice(0, 5).map((card, i) => (
                 <g key={`card-${i}`} transform={`translate(750, ${60 + i * 70})`}>
                   <rect
-                    x="-30"
-                    y="-15"
-                    width="60"
-                    height="30"
+                    x="-40"
+                    y="-20"
+                    width="80"
+                    height="40"
                     rx="8"
                     fill="#F39C12"
                     stroke="#f0f6fc"
@@ -709,24 +762,34 @@ const FlowAnalytics: React.FC = () => {
                   />
                   <text
                     x="0"
-                    y="0"
+                    y="-5"
                     textAnchor="middle"
                     dominantBaseline="middle"
                     fill="#f0f6fc"
-                    fontSize="8"
+                    fontSize="7"
                     fontWeight="bold"
                   >
-                    {card.split('-')[1]}
+                    {card}
                   </text>
                   <text
                     x="0"
-                    y="35"
+                    y="5"
                     textAnchor="middle"
-                    fill="#8b949e"
-                    fontSize="9"
-                    fontWeight="500"
+                    dominantBaseline="middle"
+                    fill="#f0f6fc"
+                    fontSize="5"
                   >
-                    {card}
+                    {getCardDescription(card).split(' ').slice(0, 4).join(' ')}
+                  </text>
+                  <text
+                    x="0"
+                    y="12"
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    fill="#f0f6fc"
+                    fontSize="5"
+                  >
+                    {getCardDescription(card).split(' ').slice(4, 8).join(' ')}
                   </text>
                 </g>
               ))}
