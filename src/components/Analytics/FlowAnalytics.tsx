@@ -257,6 +257,10 @@ const FlowAnalytics: React.FC = () => {
           'Cache-Control': 'no-cache'
         }
       });
+      
+      console.log('🌐 API Response status:', response.status);
+      console.log('🌐 API Response headers:', response.headers);
+      
       const data = await response.json();
       
       console.log('🚀 API Response received:', data);
@@ -316,7 +320,8 @@ const FlowAnalytics: React.FC = () => {
       }
     } catch (err) {
       // Fallback to mock data for local development
-      console.log('Using mock analytics data for local development');
+      console.log('❌ API call failed, using mock data:', err);
+      console.log('API URL attempted:', `${apiGatewayUrl}/bugs?query_type=summary`);
       setAnalyticsData({
         summary: {
           total_slack_tickets: 860,
