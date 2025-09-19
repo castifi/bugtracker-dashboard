@@ -1,0 +1,11 @@
+{
+  "Variables": {
+    "ZENDESK_SUBDOMAIN": "everyset",
+    "ZENDESK_EMAIL": "ralph.francisco@everyset.com",
+    "ZENDESK_API_TOKEN": "${ZENDESK_API_TOKEN}",
+    "SLACK_BOT_TOKEN": "${SLACK_BOT_TOKEN}",
+    "SLACK_CHANNEL_ID": "C02JLQ2GUJX",
+    "SHORTCUT_API_TOKEN": "${SHORTCUT_API_TOKEN}",
+    "DYNAMODB_TABLE": "BugTracker-evt-bugtracker"
+  }
+}
