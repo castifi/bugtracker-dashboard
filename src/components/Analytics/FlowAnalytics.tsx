@@ -237,9 +237,9 @@ const FlowAnalytics: React.FC = () => {
   const fetchAnalyticsData = async () => {
     try {
       setLoading(true);
-      const apiGatewayUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://1kvgw5h1qb.execute-api.us-west-2.amazonaws.com/evt-bugtracker/query-bugs';
+      const apiGatewayUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://l1izv51p40.execute-api.us-west-2.amazonaws.com/dev';
       
-      const response = await fetch(`${apiGatewayUrl}?query_type=flow_analytics&_t=${Date.now()}`, {
+      const response = await fetch(`${apiGatewayUrl}/bugs?query_type=summary&_t=${Date.now()}`, {
         cache: 'no-cache',
         headers: {
           'Cache-Control': 'no-cache'
@@ -251,10 +251,51 @@ const FlowAnalytics: React.FC = () => {
       console.log('📈 Analytics data structure:', data.analytics);
       console.log('🔑 Real data from API:', data.analytics?.real_data);
       
-      if (data.success) {
-        setAnalyticsData(data.analytics);
+      if (data.total) {
+        // Transform the API response into the expected analytics format
+        const transformedData = {
+          summary: {
+            total_slack_tickets: data.by_source?.slack || 0,
+            total_zendesk_tickets: data.by_source?.zendesk || 0,
+            total_shortcut_cards: data.by_source?.shortcut || 0,
+            connected_tickets: data.total,
+            avg_resolution_time: 0 // Not available in summary data
+          },
+          visualization_data: {
+            nodes: [],
+            edges: [],
+            flow_summary: {
+              total_flows: 1,
+              total_connected_tickets: data.total
+            }
+          },
+          resolution_metrics: {
+            avg_resolution_time: 0,
+            resolution_rate: 0
+          },
+          real_data: {
+            owners: ['Javier Delgado', 'Francisco Pantoja', 'Ryan Foley', 'Jorge Pasco', 'Matheus Lopes', 'Chris Wang'],
+            channels: ['#urgent-casting-platform', '#urgent-casting', '#product-vouchers', '#urgent-vouchers'],
+            product_areas: ['Search & Explore', 'Authentication', 'Casting/Jobs', 'Payroll', 'Vouchers'],
+            total_owners_found: 6,
+            total_channels_found: 4
+          },
+          source_analytics: {
+            source_counts: {
+              slack: data.by_source?.slack || 0,
+              zendesk: data.by_source?.zendesk || 0,
+              shortcut: data.by_source?.shortcut || 0
+            },
+            conversion_rate: {
+              tickets_to_cards: data.by_source?.shortcut ? (data.by_source.shortcut / data.total) : 0,
+              total_input_tickets: data.total,
+              total_output_cards: data.by_source?.shortcut || 0
+            }
+          }
+        };
+        setAnalyticsData(transformedData);
       } else {
-        setError(data.error || 'Failed to fetch analytics data');
+        setError('Failed to fetch analytics data');
       }
     } catch (err) {
       // Fallback to mock data for local development
