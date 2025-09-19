@@ -100,6 +100,9 @@ const FlowAnalytics: React.FC = () => {
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Define API URL with fallback
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://l1izv51p40.execute-api.us-west-2.amazonaws.com/dev';
 
   useEffect(() => {
     fetchAnalyticsData();
@@ -249,9 +252,13 @@ const FlowAnalytics: React.FC = () => {
   const fetchAnalyticsData = async () => {
     try {
       setLoading(true);
-      const apiGatewayUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://l1izv51p40.execute-api.us-west-2.amazonaws.com/dev';
+      // Debug logging
+      console.log('🔧 Environment check:', {
+        NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL,
+        API_BASE_URL: API_BASE_URL
+      });
       
-      const response = await fetch(`${apiGatewayUrl}/bugs?query_type=summary&_t=${Date.now()}`, {
+      const response = await fetch(`${API_BASE_URL}/bugs?query_type=summary&_t=${Date.now()}`, {
         cache: 'no-cache',
         headers: {
           'Cache-Control': 'no-cache'
@@ -260,6 +267,10 @@ const FlowAnalytics: React.FC = () => {
       
       console.log('🌐 API Response status:', response.status);
       console.log('🌐 API Response headers:', response.headers);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       
       const data = await response.json();
       
@@ -321,13 +332,13 @@ const FlowAnalytics: React.FC = () => {
     } catch (err) {
       // Fallback to mock data for local development
       console.log('❌ API call failed, using mock data:', err);
-      console.log('API URL attempted:', `${apiGatewayUrl}/bugs?query_type=summary`);
+      console.log('API URL attempted:', `${API_BASE_URL}/bugs?query_type=summary`);
       setAnalyticsData({
         summary: {
-          total_slack_tickets: 860,
-          total_zendesk_tickets: 789,
-          total_shortcut_cards: 163,
-          connected_tickets: 150,
+          total_slack_tickets: 1050,
+          total_zendesk_tickets: 5542,
+          total_shortcut_cards: 174,
+          connected_tickets: 6766,
           avg_resolution_time: 1026.65
         },
         resolution_metrics: {
@@ -373,8 +384,8 @@ const FlowAnalytics: React.FC = () => {
           total_channels_found: 4
         },
         source_analytics: {
-          source_counts: { slack: 860, zendesk: 789, shortcut: 163 },
-          conversion_rate: { tickets_to_cards: 0.099, total_input_tickets: 1649, total_output_cards: 163 }
+          source_counts: { slack: 1050, zendesk: 5542, shortcut: 174 },
+          conversion_rate: { tickets_to_cards: 0.026, total_input_tickets: 6766, total_output_cards: 174 }
         }
       });
     } finally {

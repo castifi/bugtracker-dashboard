@@ -10,6 +10,9 @@ A modern, unified bug tracking dashboard that integrates data from Slack, Zendes
 - **📈 Real-time Data**: Live updates from DynamoDB via API Gateway
 - **🎨 Modern UI**: Beautiful Ant Design interface with responsive layout
 - **🔍 Advanced Filtering**: Filter by priority, source, state, and date range
+- **📊 Flow Analytics**: Advanced network flow visualization with Sankey diagrams
+- **🎯 Resolution Metrics**: Detailed resolution time analysis and priority breakdown
+- **🔄 Real-time Updates**: Live data synchronization across all components
 
 ## 🏗️ Architecture
 
@@ -18,6 +21,29 @@ Frontend (Next.js) → API Gateway → Lambda Functions → DynamoDB
                                     ↓
                               Slack/Zendesk/Shortcut APIs
 ```
+
+## 🛠️ Tech Stack
+
+### Frontend
+- **Next.js 15.5.2** - React framework with SSR
+- **React 19.1.1** - UI library
+- **TypeScript 5.9.2** - Type safety
+- **Ant Design 5.27.1** - UI components
+- **Recharts 2.12.0** - Chart library
+- **@nivo/sankey 0.99.0** - Flow visualization
+- **Redux Toolkit 2.8.2** - State management
+- **Styled Components 6.1.19** - CSS-in-JS
+
+### Backend
+- **AWS Lambda** - Serverless functions
+- **API Gateway** - REST API
+- **DynamoDB** - NoSQL database
+- **Python 3.x** - Lambda runtime
+
+### Deployment
+- **AWS Amplify** - Frontend hosting
+- **AWS CloudFormation** - Infrastructure as code
+- **GitHub Actions** - CI/CD pipeline
 
 ## 🚀 Quick Start
 
@@ -37,7 +63,9 @@ Frontend (Next.js) → API Gateway → Lambda Functions → DynamoDB
 2. **Configure environment**:
    Create a `.env.local` file:
    ```env
-   NEXT_PUBLIC_API_GATEWAY_URL=https://your-api-gateway-url.execute-api.us-west-2.amazonaws.com/dev
+   NEXT_PUBLIC_API_BASE_URL=https://your-api-gateway-url.execute-api.us-west-2.amazonaws.com/dev
+   NEXT_PUBLIC_AWS_REGION=us-west-2
+   NEXT_PUBLIC_ENVIRONMENT=dev
    ```
 
 3. **Start development server**:
@@ -53,15 +81,19 @@ Frontend (Next.js) → API Gateway → Lambda Functions → DynamoDB
 ```
 src/
 ├── components/
+│   ├── Analytics/
+│   │   └── FlowAnalytics.tsx         # Advanced flow visualization and analytics
 │   ├── Dashboard/
-│   │   ├── GrafanaDashboard.tsx    # Main dashboard with charts
-│   │   └── MainDashboard.tsx        # Layout and navigation
+│   │   ├── GrafanaDashboard.tsx     # Main dashboard with charts
+│   │   └── MainDashboard.tsx         # Layout and navigation
 │   └── BugList/
-│       └── BugList.tsx             # Bug table with filters
+│       └── BugList.tsx              # Bug table with filters
 ├── lib/
-│   ├── config.ts                   # Configuration constants
-│   └── apiService.ts               # API communication layer
-└── views/                         # Future view components
+│   ├── config.ts                    # Configuration constants
+│   └── apiService.ts                # API communication layer
+└── pages/                           # Next.js pages
+    ├── index.tsx                    # Main dashboard page
+    └── api/                         # API routes
 ```
 
 ## 🎯 Dashboard Views
@@ -77,10 +109,12 @@ src/
 - **Filters**: Priority, source, state, and date range
 - **Actions**: View details and link bugs
 
-### 3. Analytics (Coming Soon)
-- Advanced reporting and trend analysis
-- Custom chart configurations
-- Export capabilities
+### 3. Analytics
+- **Flow Visualization**: Interactive Sankey diagrams showing ticket flow between systems
+- **Resolution Metrics**: Detailed analysis of resolution times by priority
+- **Source Analytics**: Breakdown of tickets by source system (Slack, Zendesk, Shortcut)
+- **Real-time Data**: Live updates from DynamoDB with caching
+- **Network Flow**: Visual representation of ticket connections and workflows
 
 ### 4. Settings (Coming Soon)
 - Dashboard configuration
@@ -93,7 +127,9 @@ src/
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `NEXT_PUBLIC_API_GATEWAY_URL` | Your API Gateway URL | Required |
+| `NEXT_PUBLIC_API_BASE_URL` | Your API Gateway URL | Required |
+| `NEXT_PUBLIC_AWS_REGION` | AWS region for API calls | `us-west-2` |
+| `NEXT_PUBLIC_ENVIRONMENT` | Environment (dev/prod) | `dev` |
 | `NEXT_PUBLIC_ENABLE_REAL_TIME_UPDATES` | Enable auto-refresh | `true` |
 | `NEXT_PUBLIC_ENABLE_NOTIFICATIONS` | Enable notifications | `true` |
 
@@ -101,7 +137,8 @@ src/
 
 The dashboard expects these API Gateway endpoints:
 
-- `GET /query-bugs` - Query bugs with various filters
+- `GET /bugs?query_type=summary` - Get summary statistics and analytics data
+- `GET /bugs` - Query bugs with various filters
 - `POST /link-bugs` - Link bugs manually
 - `POST /create-synthetic-link` - Create synthetic ticket links
 
@@ -169,11 +206,20 @@ npm start
 2. **Set environment variables** in Vercel dashboard
 3. **Deploy automatically** on push to main branch
 
-### Deploy to AWS
+### Deploy to AWS Amplify
+
+1. **Connect repository** to AWS Amplify
+2. **Set environment variables** in Amplify console:
+   - `NEXT_PUBLIC_API_BASE_URL`
+   - `NEXT_PUBLIC_AWS_REGION`
+   - `NEXT_PUBLIC_ENVIRONMENT`
+3. **Deploy automatically** on push to main branch
+
+### Deploy to AWS S3
 
 1. **Build static files**:
    ```bash
-   npm run build
+   npm run deploy
    ```
 
 2. **Upload to S3**:
@@ -270,4 +316,12 @@ For support and questions:
 ---
 
 **Ready to track bugs like a pro? 🚀**
-# Force deployment Mon Sep  8 23:39:07 CST 2025
+
+## 📊 Current Status
+
+- **Total Records**: 6,804 tickets across all systems
+- **Slack Messages**: 1,093 (with filtering for bug reports)
+- **Zendesk Tickets**: 5,537 bug tickets
+- **Shortcut Cards**: 174 bug stories
+- **API Endpoint**: `https://l1izv51p40.execute-api.us-west-2.amazonaws.com/dev`
+- **Frontend**: Deployed on AWS Amplify
