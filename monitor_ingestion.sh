@@ -31,7 +31,7 @@ echo ""
 
 # Check current data in DynamoDB
 echo "🗄️ Current DynamoDB Data:"
-aws dynamodb scan --table-name BugTracker-dev --profile AdministratorAccess12hr-100142810612 --region us-west-2 --output json --select COUNT 2>/dev/null | jq '.Count' | sed 's/^/📈 Total bugs: /'
+aws dynamodb scan --table-name BugTracker-evt-bugtracker --profile AdministratorAccess12hr-100142810612 --region us-west-2 --output json --select COUNT 2>/dev/null | jq '.Count' | sed 's/^/📈 Total bugs: /'
 
 echo ""
 echo "🎯 Next scheduled run:"

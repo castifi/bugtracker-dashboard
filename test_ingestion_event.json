@@ -1,0 +1,5 @@
+{
+  "test": true,
+  "source": "manual",
+  "action": "ingest_all"
+}

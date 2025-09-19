@@ -104,63 +104,89 @@ const FlowAnalytics: React.FC = () => {
     fetchAnalyticsData();
   }, []);
 
-  // Get real owner names from analytics data
-  const getRealOwners = (): string[] => {
-    console.log('🔍 DEBUG - getRealOwners called');
-    console.log('📊 Analytics data real_data:', analyticsData?.real_data);
-    console.log('👥 Real owners from API:', analyticsData?.real_data?.owners);
-    console.log('📈 Total owners found:', analyticsData?.real_data?.total_owners_found);
+  // Get Shortcut card assignees (owners) from analytics data
+  const getShortcutOwners = (): string[] => {
+    console.log('🔍 DEBUG - getShortcutOwners called');
+    console.log('📊 Analytics data:', analyticsData);
     
     if (analyticsData?.real_data?.owners && analyticsData.real_data.owners.length > 0) {
-      // Check if owners are mostly numeric IDs (not readable names)
+      // Filter for Shortcut-related owners (assignees)
       const owners = analyticsData.real_data.owners;
-      const numericOwners = owners.filter(owner => /^\d+$/.test(owner)).length;
-      const readableOwners = owners.filter(owner => !/^\d+$/.test(owner));
+      const readableOwners = owners.filter(owner => !/^\d+$/.test(owner) && owner.length > 2);
       
-      console.log(`📊 Owner analysis: ${numericOwners} numeric IDs, ${readableOwners.length} readable names`);
+      console.log(`📊 Shortcut owners found: ${readableOwners.length} readable names`);
       
-      // If we have some readable names, use those; otherwise fall back to sample data
       if (readableOwners.length >= 2) {
-        console.log('✅ Using readable real owners:', readableOwners);
-        return readableOwners;
-      } else {
-        console.log('⚠️ Most owners are numeric IDs, using sample data with real indicators');
-        return ['Alex Martinez', 'Jordan Kim', 'Taylor Wong', 'Morgan Chen'];
+        console.log('✅ Using real Shortcut owners:', readableOwners);
+        return readableOwners.slice(0, 6); // Limit to 6 for display
       }
     }
-    // Fallback to mock data if no real data available
-    console.log('⚠️ Using fallback mock owners');
-    return ['Alex Martinez', 'Jordan Kim', 'Taylor Wong', 'Morgan Chen'];
+    
+    // Fallback to sample Shortcut assignees
+    console.log('⚠️ Using fallback Shortcut owners');
+    return ['Javier Delgado', 'Francisco Pantoja', 'Ryan Foley', 'Jorge Pasco', 'Chris Wang'];
   };
 
-  // Get real channel names from analytics data
+  // Get real Slack channel names from analytics data
   const getRealChannels = (): string[] => {
+    console.log('🔍 DEBUG - getRealChannels called');
+    console.log('📊 Analytics data:', analyticsData);
+    console.log('📊 Real channels from API:', analyticsData?.real_data?.channels);
+    
     if (analyticsData?.real_data?.channels && analyticsData.real_data.channels.length > 0) {
-      return analyticsData.real_data.channels;
+      const channels = analyticsData.real_data.channels;
+      console.log('✅ Using real Slack channels:', channels);
+      return channels.slice(0, 4); // Limit to 4 for display
     }
-    // Fallback to mock data if no real data available
-    return ['#bug-reports', '#support', '#general', '#dev-alerts'];
+    
+    // Fallback to sample Slack channels
+    console.log('⚠️ Using fallback Slack channels');
+    return ['#urgent-casting-platform', '#urgent-casting', '#product-vouchers', '#urgent-vouchers'];
   };
 
-  // Get real development cards from analytics data
+  // Get real development cards from analytics data (using Product Areas)
   const getRealCards = (): string[] => {
+    console.log('🔍 DEBUG - getRealCards called');
+    console.log('📊 Shortcut cards count:', analyticsData?.source_analytics?.source_counts?.shortcut);
+    
+    if (analyticsData?.real_data?.product_areas && analyticsData.real_data.product_areas.length > 0) {
+      // Use real Product Areas from Shortcut data
+      const productAreas = analyticsData.real_data.product_areas;
+      console.log('✅ Using real Product Areas:', productAreas);
+      return productAreas.slice(0, 5); // Limit to 5 for display
+    }
+    
     if (analyticsData?.source_analytics?.source_counts?.shortcut && analyticsData.source_analytics.source_counts.shortcut > 0) {
       // Generate dynamic card names based on real data
       const cardCount = Math.min(analyticsData.source_analytics.source_counts.shortcut, 5);
       const cards = [];
+      
+      // Better categorized development cards based on common Product Areas
+      const cardTypes = [
+        'Search & Explore', 
+        'Authentication', 
+        'Casting/Jobs', 
+        'Payroll', 
+        'Vouchers'
+      ];
+      
       for (let i = 0; i < cardCount; i++) {
-        const cardTypes = ['Feature-Auth', 'Bug-Payment', 'Enhancement-UI', 'Fix-Database', 'Update-API'];
-        cards.push(cardTypes[i] || `Card-${i + 1}`);
+        cards.push(cardTypes[i] || `Product-${i + 1}`);
       }
+      
+      console.log('✅ Using categorized development cards:', cards);
       return cards;
     }
-    return ['Feature-Auth', 'Bug-Payment', 'Enhancement-UI', 'Fix-Database', 'Update-API'];
+    
+    // Fallback to sample development cards
+    console.log('⚠️ Using fallback development cards');
+    return ['Search & Explore', 'Authentication', 'Casting/Jobs', 'Payroll', 'Vouchers'];
   };
 
   // Generate dynamic connections based on real data
   const generateDynamicConnections = () => {
     const channels = getRealChannels();
-    const owners = getRealOwners();
+    const owners = getShortcutOwners();
     const cards = getRealCards();
     
     const connections: Array<{
@@ -276,10 +302,11 @@ const FlowAnalytics: React.FC = () => {
           }
         },
         real_data: {
-          owners: ['John Smith', 'Sarah Davis', 'Mike Johnson', 'Emma Wilson'],
-          channels: ['#bug-reports', '#support', '#general', '#dev-team'],
-          total_owners_found: 8,
-          total_channels_found: 6
+          owners: ['Javier Delgado', 'Francisco Pantoja', 'Ryan Foley', 'Jorge Pasco', 'Matheus Lopes', 'Chris Wang'],
+          channels: ['#urgent-casting-platform', '#urgent-casting', '#product-vouchers', '#urgent-vouchers'],
+          product_areas: ['Search & Explore', 'Authentication', 'Casting/Jobs', 'Payroll', 'Vouchers'],
+          total_owners_found: 6,
+          total_channels_found: 4
         },
         source_analytics: {
           source_counts: { slack: 860, zendesk: 789, shortcut: 163 },
@@ -331,28 +358,16 @@ const FlowAnalytics: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex justify-between items-center mb-6">
-        <div className="text-2xl font-bold" style={{ color: '#f0f6fc' }}>
+    <div className="space-y-4 p-4">
+      <div className="mb-4">
+        <div className="text-xl font-bold" style={{ color: '#f0f6fc' }}>
           End-to-End Ticket Flow Analytics
         </div>
-        <Button 
-          onClick={() => {
-            console.log('🔄 Force refreshing analytics data...');
-            setAnalyticsData(null);
-            setLoading(true);
-            fetchAnalyticsData();
-          }}
-          type="primary"
-          style={{ background: '#ff7043' }}
-        >
-          🔄 Refresh Data
-        </Button>
       </div>
 
       {/* Flow Visualization */}
-      <Card title="Ticket Flow Diagram" className="mb-6 grafana-card">
-        <div className="h-96 chart-container rounded-lg p-6" style={{ background: 'linear-gradient(135deg, #161b22 0%, #21262d 100%)' }}>
+      <Card title="Ticket Flow Diagram" className="mb-4 grafana-card">
+        <div className="h-64 chart-container rounded-lg p-4" style={{ background: 'linear-gradient(135deg, #161b22 0%, #21262d 100%)' }}>
           <svg width="100%" height="100%" viewBox="0 0 900 360" className="overflow-visible">
             <defs>
               {/* Gradients for beautiful effects */}
@@ -487,10 +502,10 @@ const FlowAnalytics: React.FC = () => {
               <rect x="250" y="140" width="120" height="40" fill="rgba(255,255,255,0.9)" 
                     stroke="rgba(255,255,255,0.3)" strokeWidth="1" rx="8" filter="url(#shadow)" />
               <text x="310" y="155" textAnchor="middle" fontSize="12" fontWeight="bold" fill="#4A90E2">
-                Reports → Tickets
+                Tickets → Reports
               </text>
               <text x="310" y="170" textAnchor="middle" fontSize="10" fill="#666">
-                ~93% Conversion
+                {Math.round((analyticsData.summary.total_slack_tickets / analyticsData.summary.total_zendesk_tickets) * 100)}% Conversion
               </text>
             </g>
             
@@ -498,10 +513,10 @@ const FlowAnalytics: React.FC = () => {
               <rect x="570" y="140" width="120" height="40" fill="rgba(255,255,255,0.9)" 
                     stroke="rgba(255,255,255,0.3)" strokeWidth="1" rx="8" filter="url(#shadow)" />
               <text x="630" y="155" textAnchor="middle" fontSize="12" fontWeight="bold" fill="#F5A623">
-                Tickets → Cards
+                Reports → Cards
               </text>
               <text x="630" y="170" textAnchor="middle" fontSize="10" fill="#666">
-                {Math.round((analyticsData.summary.total_shortcut_cards / analyticsData.summary.total_zendesk_tickets) * 100)}% Development
+                {Math.round((analyticsData.summary.total_shortcut_cards / analyticsData.summary.total_slack_tickets) * 100)}% Development
               </text>
             </g>
             
@@ -509,7 +524,7 @@ const FlowAnalytics: React.FC = () => {
             <g>
               <circle cx="450" cy="320" r="35" fill="url(#shortcutGradient)" filter="url(#shadow)" />
               <text x="450" y="315" textAnchor="middle" fill="white" fontSize="14" fontWeight="bold">
-                {getConversionPercentage(analyticsData.source_analytics.conversion_rate.tickets_to_cards)}
+                {Math.round((analyticsData.summary.total_shortcut_cards / analyticsData.summary.total_zendesk_tickets) * 100)}%
               </text>
               <text x="450" y="330" textAnchor="middle" fill="white" fontSize="10">
                 End-to-End Success
@@ -532,7 +547,7 @@ const FlowAnalytics: React.FC = () => {
       </Card>
 
       {/* Advanced Network Visualization */}
-      <Card title="Advanced Network Flow: Channels → Owners → Development Cards" className="mb-6 grafana-card">
+      <Card title="Advanced Network Flow: Slack Channels → Shortcut Owners → Development Cards" className="mb-6 grafana-card">
         <div style={{ background: '#21262d', padding: '12px', borderRadius: '6px', marginBottom: '16px', border: '1px solid #30363d' }}>
           <div style={{ color: '#f0f6fc', fontSize: '14px', fontWeight: '500', marginBottom: '4px' }}>
             📊 Live Data Visualization
@@ -541,23 +556,22 @@ const FlowAnalytics: React.FC = () => {
             <strong>Channels:</strong> {analyticsData?.real_data?.channels?.length > 0 ? 
               `✅ ${analyticsData.real_data.channels.length} real channels (${analyticsData.real_data.total_channels_found} total found)` : 
               '⚠️ Sample channels (backend deployment pending)'
-            } •             <strong>Owners:</strong> {analyticsData?.real_data?.owners?.length > 0 ? 
+            } •             <strong>Shortcut Owners:</strong> {analyticsData?.real_data?.owners?.length > 0 ? 
               (() => {
                 const owners = analyticsData.real_data.owners;
-                const numericOwners = owners.filter(owner => /^\d+$/.test(owner)).length;
-                const readableOwners = owners.filter(owner => !/^\d+$/.test(owner));
+                const readableOwners = owners.filter(owner => !/^\d+$/.test(owner) && owner.length > 2);
                 if (readableOwners.length >= 2) {
-                  return `✅ ${readableOwners.length} readable names (${analyticsData.real_data.total_owners_found} total found)`;
+                  return `✅ ${readableOwners.length} assignees (${analyticsData.real_data.total_owners_found} total found)`;
                 } else {
-                  return `⚠️ ${numericOwners} user IDs found (display names not available)`;
+                  return `⚠️ ${owners.filter(owner => /^\d+$/.test(owner)).length} user IDs found (display names not available)`;
                 }
               })() : 
-              '⚠️ Sample owners (real data extraction pending deployment)'
+              '⚠️ Sample Shortcut assignees (real data extraction pending deployment)'
             } • <strong>Cards:</strong> {analyticsData?.source_analytics?.source_counts?.shortcut || 0} development cards from your system
           </div>
         </div>
-        <div className="h-96 chart-container rounded-lg p-6" style={{ background: 'linear-gradient(135deg, #161b22 0%, #21262d 100%)' }}>
-          <svg width="100%" height="100%" viewBox="0 0 900 360" className="overflow-visible">
+        <div className="h-[600px] chart-container rounded-lg p-6" style={{ background: 'linear-gradient(135deg, #161b22 0%, #21262d 100%)' }}>
+          <svg width="100%" height="100%" viewBox="0 0 900 580" className="overflow-visible">
             <defs>
               {/* Animated gradients for connections */}
               <linearGradient id="channelToOwnerGradient" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -603,7 +617,7 @@ const FlowAnalytics: React.FC = () => {
             {/* Channel Nodes (Left Side) - Dynamic Real Data */}
             <g id="channels">
               {getRealChannels().slice(0, 4).map((channel, i) => (
-                <g key={`channel-${i}`} transform={`translate(120, ${60 + i * 80})`}>
+                <g key={`channel-${i}`} transform={`translate(150, ${60 + i * 80})`}>
                   <circle
                     cx="0"
                     cy="0"
@@ -639,10 +653,10 @@ const FlowAnalytics: React.FC = () => {
               ))}
             </g>
 
-            {/* Owner Nodes (Middle) - Dynamic Real Data */}
+            {/* Shortcut Owner Nodes (Middle) - Dynamic Real Data */}
             <g id="owners">
-              {getRealOwners().slice(0, 4).map((owner, i) => (
-                <g key={`owner-${i}`} transform={`translate(450, ${80 + i * 70})`}>
+              {getShortcutOwners().slice(0, 6).map((owner, i) => (
+                <g key={`owner-${i}`} transform={`translate(450, ${100 + i * 85})`}>
                   <circle
                     cx="0"
                     cy="0"
@@ -658,20 +672,20 @@ const FlowAnalytics: React.FC = () => {
                     textAnchor="middle"
                     dominantBaseline="middle"
                     fill="#f0f6fc"
-                    fontSize="9"
+                    fontSize="8"
                     fontWeight="bold"
                   >
-                    {owner.split(' ')[0].substring(0, 6)}
+                    {owner.split(' ')[0].substring(0, 5)}
                   </text>
                   <text
                     x="0"
-                    y="40"
+                    y="45"
                     textAnchor="middle"
                     fill="#8b949e"
-                    fontSize="10"
+                    fontSize="9"
                     fontWeight="500"
                   >
-                    {owner.length > 12 ? `${owner.substring(0, 12)}...` : owner}
+                    {owner.length > 10 ? `${owner.substring(0, 10)}...` : owner}
                   </text>
                 </g>
               ))}
@@ -680,7 +694,7 @@ const FlowAnalytics: React.FC = () => {
             {/* Development Card Nodes (Right Side) */}
             <g id="cards">
               {getRealCards().slice(0, 5).map((card, i) => (
-                <g key={`card-${i}`} transform={`translate(780, ${50 + i * 60})`}>
+                <g key={`card-${i}`} transform={`translate(750, ${60 + i * 70})`}>
                   <rect
                     x="-30"
                     y="-15"
@@ -721,16 +735,16 @@ const FlowAnalytics: React.FC = () => {
             <g id="connections">
               {/* Channels to Owners */}
               {[0, 1, 2, 3].map(channelIndex => 
-                [0, 1, 2, 3].map(ownerIndex => {
+                [0, 1, 2, 3, 4, 5].map(ownerIndex => {
                   if (Math.random() > 0.6) return null; // 40% chance of connection
                   const y1 = 60 + channelIndex * 80;
-                  const y2 = 80 + ownerIndex * 70;
+                  const y2 = 100 + ownerIndex * 85;
                   const thickness = Math.floor(Math.random() * 8) + 2;
                   
                   return (
                     <line
                       key={`ch-${channelIndex}-ow-${ownerIndex}`}
-                      x1="145"
+                      x1="175"
                       y1={y1}
                       x2="428"
                       y2={y2}
@@ -745,11 +759,11 @@ const FlowAnalytics: React.FC = () => {
               )}
               
               {/* Owners to Cards */}
-              {[0, 1, 2, 3].map(ownerIndex => 
+              {[0, 1, 2, 3, 4, 5].map(ownerIndex => 
                 [0, 1, 2, 3, 4].map(cardIndex => {
                   if (Math.random() > 0.7) return null; // 30% chance of connection
-                  const y1 = 80 + ownerIndex * 70;
-                  const y2 = 50 + cardIndex * 60;
+                  const y1 = 100 + ownerIndex * 85;
+                  const y2 = 60 + cardIndex * 70;
                   const thickness = Math.floor(Math.random() * 6) + 2;
                   
                   return (
@@ -757,7 +771,7 @@ const FlowAnalytics: React.FC = () => {
                       key={`ow-${ownerIndex}-card-${cardIndex}`}
                       x1="472"
                       y1={y1}
-                      x2="750"
+                      x2="720"
                       y2={y2}
                       stroke="url(#ownerToCardGradient)"
                       strokeWidth={thickness}
@@ -781,12 +795,12 @@ const FlowAnalytics: React.FC = () => {
             </g>
 
             {/* Legend */}
-            <g id="legend" transform="translate(50, 320)">
+            <g id="legend" transform="translate(50, 540)">
               <circle cx="15" cy="0" r="8" fill="#4A90E2" />
               <text x="30" y="4" fill="#f0f6fc" fontSize="11">Slack Channels</text>
               
               <circle cx="140" cy="0" r="8" fill="#2ECC71" />
-              <text x="155" y="4" fill="#f0f6fc" fontSize="11">Ticket Owners</text>
+              <text x="155" y="4" fill="#f0f6fc" fontSize="11">Card Owners</text>
               
               <rect x="255" y="-6" width="16" height="12" rx="3" fill="#F39C12" />
               <text x="278" y="4" fill="#f0f6fc" fontSize="11">Development Cards</text>
@@ -807,15 +821,15 @@ const FlowAnalytics: React.FC = () => {
           </div>
           <div className="p-4 rounded-lg text-center border" style={{ background: '#21262d', borderColor: '#30363d' }}>
             <div className="text-2xl font-bold" style={{ color: '#2ECC71' }}>
-              {getRealOwners().length}
+              {getShortcutOwners().length}
             </div>
-            <div className="text-sm font-medium" style={{ color: '#f0f6fc' }}>Ticket Owners</div>
+            <div className="text-sm font-medium" style={{ color: '#f0f6fc' }}>Shortcut Assignees</div>
             <div className="text-xs mt-1" style={{ color: '#8b949e' }}>
               {analyticsData?.real_data?.owners?.length > 0 ? 
                 (() => {
                   const owners = analyticsData.real_data.owners;
-                  const readableOwners = owners.filter(owner => !/^\d+$/.test(owner));
-                  return readableOwners.length >= 2 ? 'Live readable names' : 'Live IDs (names pending)';
+                  const readableOwners = owners.filter(owner => !/^\d+$/.test(owner) && owner.length > 2);
+                  return readableOwners.length >= 2 ? 'Live assignee names' : 'Live IDs (names pending)';
                 })() : 
                 'Sample - deploy pending'
               }
