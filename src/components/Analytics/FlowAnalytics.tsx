@@ -57,6 +57,7 @@ interface AnalyticsData {
     channels: string[];
     total_owners_found: number;
     total_channels_found: number;
+    product_areas?: string[];
   };
   source_analytics: {
     source_counts: {
