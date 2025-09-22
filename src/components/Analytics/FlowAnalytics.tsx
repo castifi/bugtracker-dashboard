@@ -645,8 +645,8 @@ const FlowAnalytics: React.FC = () => {
             } • <strong>Cards:</strong> {analyticsData?.source_analytics?.source_counts?.shortcut || 0} development cards from your system
           </div>
         </div>
-        <div className="h-[600px] chart-container rounded-lg p-6" style={{ background: 'linear-gradient(135deg, #161b22 0%, #21262d 100%)' }}>
-          <svg width="100%" height="100%" viewBox="0 0 900 580" className="overflow-visible">
+        <div className="h-[800px] chart-container rounded-lg p-6" style={{ background: 'linear-gradient(135deg, #161b22 0%, #21262d 100%)' }}>
+          <svg width="100%" height="100%" viewBox="0 0 900 750" className="overflow-visible">
             <defs>
               {/* Animated gradients for connections */}
               <linearGradient id="channelToOwnerGradient" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -973,87 +973,361 @@ const FlowAnalytics: React.FC = () => {
         </div>
       </Card>
 
-      {/* Resolution Metrics */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card title="Resolution Time Metrics" className="h-fit">
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Average Resolution Time:</span>
-              <span className="font-bold text-lg">{formatHours(analyticsData.resolution_metrics.average_resolution_hours)}</span>
+      {/* Grafana-Style Rectangle Metrics */}
+      <div className="space-y-8" style={{ display: 'block' }}>
+        {/* Resolution Metrics */}
+        <div style={{ marginBottom: '32px' }}>
+          <h3 className="text-xl font-semibold text-white mb-6 text-center">Resolution Metrics</h3>
+          <div className="flex flex-wrap gap-4 justify-center" style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'center' }}>
+            <div 
+              className="p-6 flex flex-col items-center justify-center flex-1 min-w-[280px] max-w-[320px]"
+              style={{ 
+                backgroundColor: '#2563eb', 
+                minHeight: '120px', 
+                flex: '1 1 280px', 
+                minWidth: '280px', 
+                maxWidth: '320px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                textAlign: 'center'
+              }}
+            >
+              <div style={{ 
+                fontSize: '18px', 
+                fontWeight: '600', 
+                color: 'white', 
+                marginBottom: '8px',
+                textAlign: 'center'
+              }}>
+                Average Resolution
+              </div>
+              <div style={{ 
+                fontSize: '36px', 
+                fontWeight: '900', 
+                color: 'white',
+                textAlign: 'center'
+              }}>
+                {formatHours(analyticsData.resolution_metrics.average_resolution_hours)}
+              </div>
             </div>
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Median Resolution Time:</span>
-              <span className="font-bold">{formatHours(analyticsData.resolution_metrics.median_resolution_hours)}</span>
+            <div 
+              className="p-6 flex flex-col items-center justify-center flex-1 min-w-[280px] max-w-[320px]"
+              style={{ 
+                backgroundColor: '#16a34a', 
+                minHeight: '120px', 
+                flex: '1 1 280px', 
+                minWidth: '280px', 
+                maxWidth: '320px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                textAlign: 'center'
+              }}
+            >
+              <div style={{ 
+                fontSize: '18px', 
+                fontWeight: '600', 
+                color: 'white', 
+                marginBottom: '8px',
+                textAlign: 'center'
+              }}>
+                Fastest Resolution
+              </div>
+              <div style={{ 
+                fontSize: '36px', 
+                fontWeight: '900', 
+                color: 'white',
+                textAlign: 'center'
+              }}>
+                {formatHours(analyticsData.resolution_metrics.min_resolution_hours)}
+              </div>
             </div>
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Fastest Resolution:</span>
-              <span className="font-bold text-green-600">{formatHours(analyticsData.resolution_metrics.min_resolution_hours)}</span>
+            <div 
+              className="p-6 flex flex-col items-center justify-center flex-1 min-w-[280px] max-w-[320px]"
+              style={{ 
+                backgroundColor: '#dc2626', 
+                minHeight: '120px', 
+                flex: '1 1 280px', 
+                minWidth: '280px', 
+                maxWidth: '320px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                textAlign: 'center'
+              }}
+            >
+              <div style={{ 
+                fontSize: '18px', 
+                fontWeight: '600', 
+                color: 'white', 
+                marginBottom: '8px',
+                textAlign: 'center'
+              }}>
+                Slowest Resolution
+              </div>
+              <div style={{ 
+                fontSize: '36px', 
+                fontWeight: '900', 
+                color: 'white',
+                textAlign: 'center'
+              }}>
+                {formatHours(analyticsData.resolution_metrics.max_resolution_hours)}
+              </div>
             </div>
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Slowest Resolution:</span>
-              <span className="font-bold text-red-600">{formatHours(analyticsData.resolution_metrics.max_resolution_hours)}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Completed Cards:</span>
-              <span className="font-bold">{analyticsData.resolution_metrics.total_completed_cards}</span>
+            <div 
+              className="p-6 flex flex-col items-center justify-center flex-1 min-w-[280px] max-w-[320px]"
+              style={{ 
+                backgroundColor: '#9333ea', 
+                minHeight: '120px', 
+                flex: '1 1 280px', 
+                minWidth: '280px', 
+                maxWidth: '320px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                textAlign: 'center'
+              }}
+            >
+              <div style={{ 
+                fontSize: '18px', 
+                fontWeight: '600', 
+                color: 'white', 
+                marginBottom: '8px',
+                textAlign: 'center'
+              }}>
+                Completed Cards
+              </div>
+              <div style={{ 
+                fontSize: '36px', 
+                fontWeight: '900', 
+                color: 'white',
+                textAlign: 'center'
+              }}>
+                {analyticsData.resolution_metrics.total_completed_cards}
+              </div>
             </div>
           </div>
-        </Card>
+        </div>
 
-        <Card title="Resolution by Priority" className="h-fit">
-          <div className="space-y-3">
-            {Object.entries(analyticsData.resolution_metrics.priority_breakdown).map(([priority, metrics]) => (
-              metrics.count > 0 && (
-                <div key={priority} className="border-l-4 border-gray-300 pl-4">
-                  <div className="flex justify-between items-center">
-                    <span className="font-medium text-gray-700">{priority}</span>
-                    <span className="text-sm text-gray-500">({metrics.count} cards)</span>
+        {/* Priority Breakdown */}
+        <div style={{ marginBottom: '32px' }}>
+          <h3 className="text-xl font-semibold text-white mb-6 text-center">Priority Breakdown</h3>
+          <div className="flex flex-wrap gap-4 justify-center" style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'center' }}>
+            {Object.entries(analyticsData.resolution_metrics.priority_breakdown)
+              .filter(([_, metrics]) => metrics.count > 0)
+              .sort(([_, a], [__, b]) => b.count - a.count)
+              .map(([priority, metrics]) => {
+                const getPriorityColor = (priority: string) => {
+                  switch (priority.toLowerCase()) {
+                    case 'critical': return '#dc2626';
+                    case 'high': return '#ea580c';
+                    case 'medium': return '#ca8a04';
+                    case 'low': return '#16a34a';
+                    default: return '#6b7280';
+                  }
+                };
+                
+                return (
+                  <div 
+                    key={priority} 
+                    className="p-6 flex flex-col items-center justify-center flex-1 min-w-[200px] max-w-[280px]"
+                    style={{ 
+                      backgroundColor: getPriorityColor(priority), 
+                      minHeight: '120px', 
+                      flex: '1 1 200px', 
+                      minWidth: '200px', 
+                      maxWidth: '280px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      textAlign: 'center'
+                    }}
+                  >
+                    <div style={{ 
+                      fontSize: '18px', 
+                      fontWeight: '600', 
+                      color: 'white', 
+                      marginBottom: '8px',
+                      textAlign: 'center'
+                    }}>
+                      {priority}
+                    </div>
+                    <div style={{ 
+                      fontSize: '36px', 
+                      fontWeight: '900', 
+                      color: 'white',
+                      textAlign: 'center'
+                    }}>
+                      {metrics.count}
+                    </div>
                   </div>
-                  <div className="text-sm text-gray-600">
-                    Avg: {formatHours(metrics.avg_hours)}
+                );
+              })}
+          </div>
+        </div>
+
+        {/* Time Distribution */}
+        <div style={{ marginBottom: '32px' }}>
+          <h3 className="text-xl font-semibold text-white mb-6 text-center">Time Distribution</h3>
+          <div className="flex flex-wrap gap-4 justify-center" style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'center' }}>
+            {Object.entries(analyticsData.resolution_metrics.resolution_distribution).map(([timeframe, count], index) => {
+              const colors = ['#2563eb', '#16a34a', '#ca8a04', '#ea580c', '#dc2626', '#9333ea'];
+              const backgroundColor = colors[index % colors.length];
+              
+              return (
+                <div 
+                  key={timeframe} 
+                  className="p-4 flex flex-col items-center justify-center flex-1 min-w-[150px] max-w-[200px]"
+                  style={{ 
+                    backgroundColor, 
+                    minHeight: '100px', 
+                    flex: '1 1 150px', 
+                    minWidth: '150px', 
+                    maxWidth: '200px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    textAlign: 'center'
+                  }}
+                >
+                  <div style={{ 
+                    fontSize: '14px', 
+                    fontWeight: '600', 
+                    color: 'white', 
+                    marginBottom: '8px',
+                    textAlign: 'center'
+                  }}>
+                    {timeframe}
+                  </div>
+                  <div style={{ 
+                    fontSize: '30px', 
+                    fontWeight: '900', 
+                    color: 'white',
+                    textAlign: 'center'
+                  }}>
+                    {count}
                   </div>
                 </div>
-              )
-            ))}
+              );
+            })}
           </div>
-        </Card>
+        </div>
+
+        {/* Conversion Analytics */}
+        <div style={{ marginBottom: '32px' }}>
+          <h3 className="text-xl font-semibold text-white mb-6 text-center">Conversion Analytics</h3>
+          <div className="flex flex-wrap gap-4 justify-center" style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', justifyContent: 'center' }}>
+            <div 
+              className="p-6 flex flex-col items-center justify-center flex-1 min-w-[280px] max-w-[350px]"
+              style={{ 
+                backgroundColor: '#4f46e5', 
+                minHeight: '120px', 
+                flex: '1 1 280px', 
+                minWidth: '280px', 
+                maxWidth: '350px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                textAlign: 'center'
+              }}
+            >
+              <div style={{ 
+                fontSize: '18px', 
+                fontWeight: '600', 
+                color: 'white', 
+                marginBottom: '8px',
+                textAlign: 'center'
+              }}>
+                Tickets → Cards
+              </div>
+              <div style={{ 
+                fontSize: '36px', 
+                fontWeight: '900', 
+                color: 'white',
+                textAlign: 'center'
+              }}>
+                {getConversionPercentage(analyticsData.source_analytics.conversion_rate.tickets_to_cards)}
+              </div>
+            </div>
+            <div 
+              className="p-6 flex flex-col items-center justify-center flex-1 min-w-[280px] max-w-[350px]"
+              style={{ 
+                backgroundColor: '#0891b2', 
+                minHeight: '120px', 
+                flex: '1 1 280px', 
+                minWidth: '280px', 
+                maxWidth: '350px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                textAlign: 'center'
+              }}
+            >
+              <div style={{ 
+                fontSize: '18px', 
+                fontWeight: '600', 
+                color: 'white', 
+                marginBottom: '8px',
+                textAlign: 'center'
+              }}>
+                Total Input
+              </div>
+              <div style={{ 
+                fontSize: '36px', 
+                fontWeight: '900', 
+                color: 'white',
+                textAlign: 'center'
+              }}>
+                {analyticsData.source_analytics.conversion_rate.total_input_tickets}
+              </div>
+            </div>
+            <div 
+              className="p-6 flex flex-col items-center justify-center flex-1 min-w-[280px] max-w-[350px]"
+              style={{ 
+                backgroundColor: '#0d9488', 
+                minHeight: '120px', 
+                flex: '1 1 280px', 
+                minWidth: '280px', 
+                maxWidth: '350px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                textAlign: 'center'
+              }}
+            >
+              <div style={{ 
+                fontSize: '18px', 
+                fontWeight: '600', 
+                color: 'white', 
+                marginBottom: '8px',
+                textAlign: 'center'
+              }}>
+                Total Output
+              </div>
+              <div style={{ 
+                fontSize: '36px', 
+                fontWeight: '900', 
+                color: 'white',
+                textAlign: 'center'
+              }}>
+                {analyticsData.source_analytics.conversion_rate.total_output_cards}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Time Distribution */}
-      <Card title="Resolution Time Distribution" className="mb-6">
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          {Object.entries(analyticsData.resolution_metrics.resolution_distribution).map(([timeframe, count]) => (
-            <div key={timeframe} className="text-center">
-              <div className="text-2xl font-bold text-blue-600">{count}</div>
-              <div className="text-sm text-gray-600">{timeframe}</div>
-            </div>
-          ))}
-        </div>
-      </Card>
 
-      {/* Conversion Metrics */}
-      <Card title="Conversion Analytics" className="mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="text-center">
-            <div className="text-xl font-bold text-indigo-600">
-              {getConversionPercentage(analyticsData.source_analytics.conversion_rate.tickets_to_cards)}
-            </div>
-            <div className="text-sm text-gray-600">Tickets → Cards Conversion</div>
-          </div>
-          <div className="text-center">
-            <div className="text-xl font-bold text-blue-600">
-              {analyticsData.source_analytics.conversion_rate.total_input_tickets}
-            </div>
-            <div className="text-sm text-gray-600">Total Input Tickets</div>
-          </div>
-          <div className="text-center">
-            <div className="text-xl font-bold text-orange-600">
-              {analyticsData.source_analytics.conversion_rate.total_output_cards}
-            </div>
-            <div className="text-sm text-gray-600">Total Output Cards</div>
-          </div>
-        </div>
-      </Card>
 
       {/* Insights */}
       <Card title="Key Insights" className="bg-gradient-to-r from-blue-50 to-purple-50">
