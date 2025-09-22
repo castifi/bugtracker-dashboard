@@ -3,7 +3,7 @@ frontend:
   phases:
     preBuild:
       commands:
-        - npm install
+        - npm install --legacy-peer-deps
         - echo "NEXT_PUBLIC_API_BASE_URL=https://l1izv51p40.execute-api.us-west-2.amazonaws.com/dev" >> .env.local
         - echo "NEXT_PUBLIC_AWS_REGION=us-west-2" >> .env.local
         - echo "NEXT_PUBLIC_ENVIRONMENT=dev" >> .env.local
