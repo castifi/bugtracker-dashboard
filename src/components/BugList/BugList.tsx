@@ -553,6 +553,17 @@ const BugList: React.FC<BugListProps> = ({
             allowClear
           />
           <Select
+            value={selectedSource}
+            onChange={setSelectedSource}
+            placeholder="Source"
+            style={{ width: 120 }}
+          >
+            <Option value="all">All Sources</Option>
+            <Option value="slack">Slack</Option>
+            <Option value="zendesk">Zendesk</Option>
+            <Option value="shortcut">Shortcut</Option>
+          </Select>
+          <Select
             value={selectedPriority}
             onChange={setSelectedPriority}
             placeholder="Priority"
@@ -570,17 +581,6 @@ const BugList: React.FC<BugListProps> = ({
             <Option value="Critical">Critical</Option>
             <Option value="Not Set">Not Set</Option>
             <Option value="Unknown">Unknown</Option>
-          </Select>
-          <Select
-            value={selectedSource}
-            onChange={setSelectedSource}
-            placeholder="Source"
-            style={{ width: 120 }}
-          >
-            <Option value="all">All Sources</Option>
-            <Option value="slack">Slack</Option>
-            <Option value="zendesk">Zendesk</Option>
-            <Option value="shortcut">Shortcut</Option>
           </Select>
           <Select
             value={selectedState}
