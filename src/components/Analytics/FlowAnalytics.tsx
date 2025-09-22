@@ -433,7 +433,7 @@ const FlowAnalytics: React.FC = () => {
   }
 
   return (
-    <div className="space-y-4 p-4">
+    <div className="space-y-4 p-4" style={{ backgroundColor: '#0d1117', minHeight: '100vh' }}>
       <div className="mb-4">
         <div className="text-xl font-bold" style={{ color: '#f0f6fc' }}>
           End-to-End Ticket Flow Analytics
