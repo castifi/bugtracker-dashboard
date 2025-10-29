@@ -71,9 +71,23 @@ class ApiService {
 
   // Query bugs with various filters
   async queryBugs(params: BugQueryParams): Promise<ApiResponse> {
-    return this.makeRequest(apiEndpoints.queryBugs, {
+    // Build query parameters
+    const queryParams = new URLSearchParams();
+    queryParams.append('query_type', params.query_type);
+    
+    if (params.params) {
+      Object.entries(params.params).forEach(([key, value]) => {
+        queryParams.append(key, String(value));
+      });
+    }
+    
+    if (params.time_range) {
+      queryParams.append('start_date', params.time_range.start_date);
+      queryParams.append('end_date', params.time_range.end_date);
+    }
+    
+    return this.makeRequest(`${apiEndpoints.queryBugs}?${queryParams.toString()}`, {
       method: 'GET',
-      body: JSON.stringify(params),
     });
   }
 
@@ -142,6 +156,21 @@ class ApiService {
     return this.queryBugs({
       query_type: 'by_ticket_id',
       params: { ticket_id: ticketId },
+    });
+  }
+
+  // Get all bugs (for checking recent updates)
+  async getAllBugs(limit?: number, orderBy: string = 'newest'): Promise<ApiResponse> {
+    const params = new URLSearchParams({
+      query_type: 'list',
+    });
+    if (limit) {
+      params.append('limit', limit.toString());
+    }
+    params.append('order_by', orderBy);
+    
+    return this.makeRequest(`${apiEndpoints.queryBugs}?${params.toString()}`, {
+      method: 'GET',
     });
   }
 

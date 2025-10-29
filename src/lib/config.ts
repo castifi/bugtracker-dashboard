@@ -1,7 +1,7 @@
 // Configuration for BugTracker Dashboard
 export const config = {
-  // API Gateway URL - Hardcoded for static export
-  apiGatewayUrl: 'https://1kvgw5h1qb.execute-api.us-west-2.amazonaws.com/evt-bugtracker/query-bugs',
+  // API Gateway URL - Base URL (without endpoint path)
+  apiGatewayUrl: 'https://1kvgw5h1qb.execute-api.us-west-2.amazonaws.com/evt-bugtracker',
   
   // AWS Configuration
   awsRegion: process.env.NEXT_PUBLIC_AWS_REGION || 'us-west-2',

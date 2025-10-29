@@ -278,14 +278,23 @@ const FlowAnalytics: React.FC = () => {
       console.log('📈 Analytics data structure:', data.analytics);
       console.log('🔑 Real data from API:', data.analytics?.real_data);
       
-      if (data.total) {
+      if (data.total || data.total === 0) {
+        // Calculate input tickets (Slack + Zendesk) - these are the tickets that feed into the system
+        const inputTickets = (data.by_source?.slack || 0) + (data.by_source?.zendesk || 0);
+        const shortcutCards = data.by_source?.shortcut || 0;
+        
+        // Connected tickets: For now, we use shortcut cards as a proxy for connected tickets
+        // TODO: This should be calculated from actual linked bugs when linking data is available
+        // A ticket is "connected" if it has a corresponding Shortcut card created from it
+        const connectedTickets = Math.min(shortcutCards, inputTickets); // Can't have more connections than input tickets
+        
         // Transform the API response into the expected analytics format
         const transformedData = {
           summary: {
             total_slack_tickets: data.by_source?.slack || 0,
             total_zendesk_tickets: data.by_source?.zendesk || 0,
-            total_shortcut_cards: data.by_source?.shortcut || 0,
-            connected_tickets: data.total,
+            total_shortcut_cards: shortcutCards,
+            connected_tickets: connectedTickets,
             avg_resolution_time: 0 // Not available in summary data
           },
           visualization_data: {
@@ -293,7 +302,7 @@ const FlowAnalytics: React.FC = () => {
             edges: [],
             flow_summary: {
               total_flows: 1,
-              total_connected_tickets: data.total
+              total_connected_tickets: connectedTickets
             }
           },
           resolution_metrics: {
@@ -306,22 +315,23 @@ const FlowAnalytics: React.FC = () => {
             resolution_distribution: {}
           },
           real_data: {
-            owners: ['Javier Delgado', 'Francisco Pantoja', 'Ryan Foley', 'Jorge Pasco', 'Matheus Lopes', 'Chris Wang'],
+            owners: ['Javier Delgado', 'Francisco Pantoja', 'Ryan Foley', 'Jorge Pasco', 'Chris Wang'],
             channels: ['#urgent-casting-platform', '#urgent-casting', '#product-vouchers', '#urgent-vouchers'],
             product_areas: ['Search & Explore', 'Authentication', 'Casting/Jobs', 'Payroll', 'Vouchers'],
-            total_owners_found: 6,
+            total_owners_found: 5,
             total_channels_found: 4
           },
           source_analytics: {
             source_counts: {
               slack: data.by_source?.slack || 0,
               zendesk: data.by_source?.zendesk || 0,
-              shortcut: data.by_source?.shortcut || 0
+              shortcut: shortcutCards
             },
             conversion_rate: {
-              tickets_to_cards: data.by_source?.shortcut ? (data.by_source.shortcut / data.total) : 0,
-              total_input_tickets: data.total,
-              total_output_cards: data.by_source?.shortcut || 0
+              // Conversion rate: percentage of input tickets (Slack + Zendesk) that resulted in Shortcut cards
+              tickets_to_cards: inputTickets > 0 ? (shortcutCards / inputTickets) : 0,
+              total_input_tickets: inputTickets,
+              total_output_cards: shortcutCards
             }
           }
         };
@@ -377,10 +387,10 @@ const FlowAnalytics: React.FC = () => {
           }
         },
         real_data: {
-          owners: ['Javier Delgado', 'Francisco Pantoja', 'Ryan Foley', 'Jorge Pasco', 'Matheus Lopes', 'Chris Wang'],
+          owners: ['Javier Delgado', 'Francisco Pantoja', 'Ryan Foley', 'Jorge Pasco', 'Chris Wang'],
           channels: ['#urgent-casting-platform', '#urgent-casting', '#product-vouchers', '#urgent-vouchers'],
           product_areas: ['Search & Explore', 'Authentication', 'Casting/Jobs', 'Payroll', 'Vouchers'],
-          total_owners_found: 6,
+          total_owners_found: 5,
           total_channels_found: 4
         },
         source_analytics: {
@@ -479,17 +489,19 @@ const FlowAnalytics: React.FC = () => {
               {/* Zendesk ticket distribution visualization */}
               <g>
                 <text x="130" y="160" textAnchor="middle" fill="white" fontSize="12" opacity="0.9">
-                  Connected: {analyticsData.summary.connected_tickets}
+                  Connected: {analyticsData.summary.connected_tickets} / {analyticsData.summary.total_slack_tickets + analyticsData.summary.total_zendesk_tickets}
                 </text>
                 
                 {/* Visual bar showing connected vs total */}
                 <rect x="80" y="180" width="100" height="8" fill="rgba(255,255,255,0.3)" rx="4" />
                 <rect x="80" y="180" 
-                      width={(analyticsData.summary.connected_tickets / analyticsData.summary.total_zendesk_tickets) * 100} 
+                      width={analyticsData.summary.total_slack_tickets + analyticsData.summary.total_zendesk_tickets > 0 ? 
+                        ((analyticsData.summary.connected_tickets / (analyticsData.summary.total_slack_tickets + analyticsData.summary.total_zendesk_tickets)) * 100) : 0} 
                       height="8" fill="white" rx="4" />
                 
                 <text x="130" y="205" textAnchor="middle" fill="white" fontSize="10">
-                  {Math.round((analyticsData.summary.connected_tickets / analyticsData.summary.total_zendesk_tickets) * 100)}% Connected
+                  {analyticsData.summary.total_slack_tickets + analyticsData.summary.total_zendesk_tickets > 0 ? 
+                    Math.round((analyticsData.summary.connected_tickets / (analyticsData.summary.total_slack_tickets + analyticsData.summary.total_zendesk_tickets)) * 100) : 0}% Connected
                 </text>
                 
                 {/* Ticket ID examples */}
@@ -820,19 +832,19 @@ const FlowAnalytics: React.FC = () => {
             <g id="connections">
               {/* Realistic Team Assignment Matrix */}
               {/* Channels: 0=urgent-casting-platform, 1=urgent-casting, 2=product-vouchers, 3=urgent-vouchers */}
-              {/* Owners: 0=Javier, 1=Francisco, 2=Ryan, 3=Jorge, 4=Matheus, 5=Chris */}
+              {/* Owners: 0=Javier, 1=Francisco, 2=Ryan, 3=Jorge, 4=Chris */}
               {/* Cards: 0=Search&Explore, 1=Authentication, 2=Casting/Jobs, 3=Payroll, 4=Vouchers */}
               
               {/* Channel to Owner Connections (based on real expertise) */}
               {[
-                // urgent-casting-platform: Javier (primary), Francisco, Jorge, Matheus
-                { channel: 0, owners: [0, 1, 3, 4], weights: [8, 6, 5, 4] },
+                // urgent-casting-platform: Javier (primary), Francisco, Jorge
+                { channel: 0, owners: [0, 1, 3], weights: [8, 6, 5] },
                 // urgent-casting: Francisco (primary), Javier, Jorge
                 { channel: 1, owners: [1, 0, 3], weights: [8, 6, 5] },
                 // product-vouchers: Ryan (primary), Chris
-                { channel: 2, owners: [2, 5], weights: [8, 6] },
+                { channel: 2, owners: [2, 4], weights: [8, 6] },
                 // urgent-vouchers: Ryan (primary), Chris, Francisco (support)
-                { channel: 3, owners: [2, 5, 1], weights: [8, 7, 4] }
+                { channel: 3, owners: [2, 4, 1], weights: [8, 7, 4] }
               ].map(({ channel, owners, weights }) =>
                 owners.map((ownerIndex, i) => {
                   const y1 = 60 + channel * 80;
@@ -866,10 +878,8 @@ const FlowAnalytics: React.FC = () => {
                 { owner: 2, cards: [4, 3], weights: [8, 6] },
                 // Jorge: Search&Explore (primary), Casting/Jobs
                 { owner: 3, cards: [0, 2], weights: [8, 6] },
-                // Matheus: Casting/Jobs (primary), Search&Explore
-                { owner: 4, cards: [2, 0], weights: [8, 6] },
                 // Chris: Vouchers (primary), Payroll, Authentication (support)
-                { owner: 5, cards: [4, 3, 1], weights: [8, 6, 4] }
+                { owner: 4, cards: [4, 3, 1], weights: [8, 6, 4] }
               ].map(({ owner, cards, weights }) =>
                 cards.map((cardIndex, i) => {
                   const y1 = 100 + owner * 85;
@@ -1335,7 +1345,7 @@ const FlowAnalytics: React.FC = () => {
           <div className="flex items-start space-x-3">
             <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
             <div>
-              <strong>Connection Rate:</strong> {analyticsData.summary.connected_tickets} out of {analyticsData.summary.total_zendesk_tickets} Zendesk tickets are connected to Shortcut cards
+              <strong>Connection Rate:</strong> {analyticsData.summary.connected_tickets} out of {(analyticsData.summary.total_slack_tickets + analyticsData.summary.total_zendesk_tickets)} input tickets (Slack + Zendesk) are connected to Shortcut cards
             </div>
           </div>
           <div className="flex items-start space-x-3">
@@ -1347,7 +1357,7 @@ const FlowAnalytics: React.FC = () => {
           <div className="flex items-start space-x-3">
             <div className="w-2 h-2 bg-orange-500 rounded-full mt-2"></div>
             <div>
-              <strong>Time Distribution:</strong> {analyticsData.resolution_metrics.resolution_distribution['2+ weeks']} tickets ({((analyticsData.resolution_metrics.resolution_distribution['2+ weeks'] / analyticsData.resolution_metrics.total_completed_cards) * 100).toFixed(1)}%) take more than 2 weeks to resolve
+              <strong>Time Distribution:</strong> {analyticsData.resolution_metrics.resolution_distribution['2+ weeks'] || 0} tickets ({analyticsData.resolution_metrics.total_completed_cards > 0 ? (((analyticsData.resolution_metrics.resolution_distribution['2+ weeks'] || 0) / analyticsData.resolution_metrics.total_completed_cards) * 100).toFixed(1) : '0.0'}%) take more than 2 weeks to resolve
             </div>
           </div>
           <div className="flex items-start space-x-3">

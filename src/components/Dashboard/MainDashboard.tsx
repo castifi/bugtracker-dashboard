@@ -11,6 +11,7 @@ import styled from 'styled-components';
 import GrafanaDashboard from '../Dashboard/GrafanaDashboard';
 import BugList from '../BugList/BugList';
 import FlowAnalytics from '../Analytics/FlowAnalytics';
+import Settings from '../Settings/Settings';
 
 const { Header, Sider, Content } = Layout;
 const { Title } = Typography;
@@ -107,12 +108,7 @@ const MainDashboard: React.FC = () => {
       case DashboardView.ANALYTICS:
         return <FlowAnalytics key={refreshKey} />;
       case DashboardView.SETTINGS:
-        return (
-          <div>
-            <Title level={2}>Settings</Title>
-            <p>Configuration and preferences coming soon...</p>
-          </div>
-        );
+        return <Settings key={refreshKey} />;
       default:
         return <GrafanaDashboard key={refreshKey} />;
     }
