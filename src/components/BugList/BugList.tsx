@@ -211,7 +211,7 @@ const BugList: React.FC<BugListProps> = ({
         }
       }
 
-      console.log(`📈 FINAL SUMMARY:`, {
+      console.log(`📈 FINAL SUMMARY (before deduplication):`, {
         totalFetched: allBugs.length,
         selectedFilter: selectedSource,
         distribution: {
@@ -222,8 +222,57 @@ const BugList: React.FC<BugListProps> = ({
         }
       });
 
-      setBugs(allBugs);
-      setFilteredBugs(allBugs);
+      // Deduplicate Slack bugs: Group by SK and keep the most recently updated one
+      let deduplicatedBugs = allBugs;
+      if (selectedSource === 'slack' || (selectedSource === 'all' && allBugs.some(b => b.sourceSystem === 'slack'))) {
+        const slackBugs = allBugs.filter(b => b.sourceSystem === 'slack');
+        const otherBugs = allBugs.filter(b => b.sourceSystem !== 'slack');
+        
+        // Group Slack bugs by SK
+        const slackGroups = new Map<string, BugItem[]>();
+        slackBugs.forEach(bug => {
+          const sk = bug.SK || '';
+          if (!slackGroups.has(sk)) {
+            slackGroups.set(sk, []);
+          }
+          slackGroups.get(sk)!.push(bug);
+        });
+        
+        // For each group, keep the most recently updated one
+        const deduplicatedSlackBugs: BugItem[] = [];
+        let duplicateCount = 0;
+        
+        slackGroups.forEach((bugs, sk) => {
+          if (bugs.length > 1) {
+            duplicateCount += bugs.length - 1;
+            // Sort by updatedAt (most recent first), then by createdAt
+            bugs.sort((a, b) => {
+              const aUpdated = new Date(a.updatedAt || a.createdAt || 0).getTime();
+              const bUpdated = new Date(b.updatedAt || b.createdAt || 0).getTime();
+              if (bUpdated !== aUpdated) return bUpdated - aUpdated;
+              const aCreated = new Date(a.createdAt || 0).getTime();
+              const bCreated = new Date(b.createdAt || 0).getTime();
+              return bCreated - aCreated;
+            });
+            // Keep the first (most recent) one
+            deduplicatedSlackBugs.push(bugs[0]);
+          } else {
+            deduplicatedSlackBugs.push(bugs[0]);
+          }
+        });
+        
+        deduplicatedBugs = [...otherBugs, ...deduplicatedSlackBugs];
+        
+        console.log(`🔧 Deduplication results:`, {
+          before: slackBugs.length,
+          after: deduplicatedSlackBugs.length,
+          duplicatesRemoved: duplicateCount,
+          uniqueMessages: slackGroups.size
+        });
+      }
+
+      setBugs(deduplicatedBugs);
+      setFilteredBugs(deduplicatedBugs);
 
     } catch (error) {
       console.error('Error fetching bugs:', error);
