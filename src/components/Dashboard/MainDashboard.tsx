@@ -21,45 +21,53 @@ const StyledLayout = styled(Layout)`
 `;
 
 const StyledHeader = styled(Header)`
-  background: #001529;
+  background: #161b22;
   padding: 0 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  border-bottom: 1px solid #30363d;
   
   .logo {
-    color: white;
+    color: #f0f6fc;
     font-size: 20px;
     font-weight: bold;
   }
   
   .header-actions {
-    color: white;
+    color: #f0f6fc;
   }
 `;
 
 const StyledSider = styled(Sider)`
-  background: #001529;
+  background: #161b22;
+  border-right: 1px solid #30363d;
   
   .ant-menu {
-    background: #001529;
+    background: #161b22;
+    border-right: none;
   }
   
   .ant-menu-item {
-    color: #fff;
+    color: #f0f6fc;
     
     &:hover {
-      background: #1890ff;
+      background: #21262d;
     }
   }
   
   .ant-menu-item-selected {
-    background: #1890ff;
+    background: #ff7043;
+    color: #fff;
+    
+    &::after {
+      display: none;
+    }
   }
 `;
 
 const StyledContent = styled(Content)`
-  background: #f0f2f5;
+  background: #0d1117;
   overflow: auto;
 `;
 
